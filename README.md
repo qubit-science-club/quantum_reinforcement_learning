@@ -126,7 +126,6 @@ plt.show()
 
 Let's see how the trained agent works:
 
-
 ![](assets/agent_walk.gif "Agent walk")
 
 
@@ -140,11 +139,13 @@ In the quantum approach we are replacing the neural network with the so-called V
 
 Recall that our task is, given a state (the place on the board where our agent is), to find the best corresponding move. The board contains 16 possible states (0-15), which can be encoded using 4 bits (0000-1111)
 
-$$ b_1 b_2 b_3 b_4, $$
+<!-- $$ b_1 b_2 b_3 b_4, $$ -->
+![equation](https://latex.codecogs.com/svg.image?b_1&space;b_2&space;b_3&space;b_4,)
 
 or similarly 4 qubits
 
-$$ |b_1\rangle \otimes |b_2\rangle \otimes |b_3\rangle \otimes |b_4\rangle. $$
+<!-- $$ |b_1\rangle \otimes |b_2\rangle \otimes |b_3\rangle \otimes |b_4\rangle. $$ -->
+![equation](https://latex.codecogs.com/svg.image?|b_1\rangle&space;\otimes&space;|b_2\rangle&space;\otimes&space;|b_3\rangle&space;\otimes&space;|b_4\rangle.)
 
 For example, if we are in the 13th state, its bitwise representation is $1101$, which can be also written down using qubits' states as $|1\rangle \otimes |1\rangle \otimes |0\rangle \otimes |1\rangle$.
 
@@ -162,9 +163,10 @@ On the encoded state we are acting with the following gates:
 
 At the beginning we are entangling all of the qubits using the $CNOT$ gates. Then, we are rotating each qubit along the $X$, $Y$ and $Z$ axes according to the following formula
 
-$$ R(\alpha_i, \beta_i, \gamma_i) = R_x(\alpha_i) R_y(\beta_i) R_z(\gamma_i) $$
+<!-- $$ R(\alpha_i, \beta_i, \gamma_i) = R_x(\alpha_i) R_y(\beta_i) R_z(\gamma_i) $$ -->
+![equation](https://latex.codecogs.com/svg.image?R(\alpha_i,&space;\beta_i,&space;\gamma_i)&space;=&space;R_x(\alpha_i)&space;R_y(\beta_i)&space;R_z(\gamma_i))
 
-$\alpha$, $\beta$ oraz $\gamma$ are the parameters that will be optimized during each training's iteration (which also means, that the gradient will be calculated exactly over these variables).
+$\alpha$, $\beta$ and $\gamma$ are the parameters that will be optimized during each training's iteration (which also means, that the gradient will be calculated exactly over these variables).
 
 At the very end we are conducting a measurement of each qubit and basing on the output we make a proper move. The whole circuit looks as follows:
 
