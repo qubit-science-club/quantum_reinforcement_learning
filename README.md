@@ -27,8 +27,11 @@ lake.render()
 ```
 
 SFFF
+
 FHFH
+
 FFFH
+
 HFFG
 
 **Legend:**
@@ -40,9 +43,9 @@ HFFG
 The agent is always in one of the spaces and, based on his policy, decides to move in one direction (left, right, up, down). The entire walk focuses on the reward, which the agent increases or decreases by entering a specific field.
 Scoring example:
 
-- Safe field: -0.01 to the reward (penalty to eliminate detour or walking in circles),
+- Frozen surface: -0.01 to the reward (penalty to eliminate detour or walking in circles),
 - Starting point: -0.01 to reward,
-- Drumbling: -1 to the reward,
+- Hole: -1 to the reward,
 - End point: +1 to the reward.
 
 Politics is a Q function that takes an action (e.g. move left) and a state (field 5 - second row from the top, second column from the right) as an input, and returns an appropriate reward. In the the most basic case (without the use of deep learning), the update of the politics (after each step) is represented by the Bellman equation:
@@ -121,7 +124,7 @@ plt.show()
 
 ![](assets/number_of_steps.png "Number of steps")
 
-Let's check how a trained agent works:
+Let's see how the trained agent works:
 
 
 ![](assets/agent_walk.gif "Agent walk")
