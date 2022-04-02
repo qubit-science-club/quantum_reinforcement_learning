@@ -147,13 +147,13 @@ or similarly 4 qubits
 <!-- $$ |b_1\rangle \otimes |b_2\rangle \otimes |b_3\rangle \otimes |b_4\rangle. $$ -->
 ![equation](https://latex.codecogs.com/svg.image?|b_1\rangle&space;\otimes&space;|b_2\rangle&space;\otimes&space;|b_3\rangle&space;\otimes&space;|b_4\rangle.)
 
-For example, if we are in the 13th state, its bitwise representation is $1101$, which can be also written down using qubits' states as $|1\rangle \otimes |1\rangle \otimes |0\rangle \otimes |1\rangle$.
+For example, if we are in the 13th state, its bitwise representation is 1101, which can be also written down using qubits' states as ![equation](https://latex.codecogs.com/svg.image?|1\rangle&space;\otimes&space;|1\rangle&space;\otimes&space;|0\rangle&space;\otimes&space;|1\rangle). 
 
 Finally, the explicit gates which must be applied on consecutive qubits to encode agent's state are shown below:
 
 ![](assets/encoding.jpg "Encoding of agent's state")
 
-Note, that we are using the $ \theta_i$ and $\phi_i$ parameters. These parameters won't be trained in the further part of the procedure, and are only used to encode the state properly.
+Note, that we are using the ![equation](https://latex.codecogs.com/svg.image?\theta_i) and ![equation](https://latex.codecogs.com/svg.image?\phi_i) parameters. These parameters won't be trained in the further part of the procedure, and are only used to encode the state properly.
 
 ### Layers
 
@@ -161,12 +161,12 @@ On the encoded state we are acting with the following gates:
 
 ![](assets/layer_1.jpg)
 
-At the beginning we are entangling all of the qubits using the $CNOT$ gates. Then, we are rotating each qubit along the $X$, $Y$ and $Z$ axes according to the following formula
+At the beginning we are entangling all of the qubits using the *CNOT* gates. Then, we are rotating each qubit along the *X*, *Y* and *Z* axes according to the following formula
 
 <!-- $$ R(\alpha_i, \beta_i, \gamma_i) = R_x(\alpha_i) R_y(\beta_i) R_z(\gamma_i) $$ -->
 ![equation](https://latex.codecogs.com/svg.image?R(\alpha_i,&space;\beta_i,&space;\gamma_i)&space;=&space;R_x(\alpha_i)&space;R_y(\beta_i)&space;R_z(\gamma_i))
 
-$\alpha$, $\beta$ and $\gamma$ are the parameters that will be optimized during each training's iteration (which also means, that the gradient will be calculated exactly over these variables).
+![equation](https://latex.codecogs.com/svg.image?\alpha), ![equation](https://latex.codecogs.com/svg.image?\beta) and ![equation](https://latex.codecogs.com/svg.image?\gamma) are the parameters that will be optimized during each training's iteration (which also means, that the gradient will be calculated exactly over these variables).
 
 At the very end we are conducting a measurement of each qubit and basing on the output we make a proper move. The whole circuit looks as follows:
 
@@ -178,7 +178,7 @@ Because the training proces of VQC is very unstable we are (similarly as in the 
 
 ## Extended classical model
 
-It's important to note, that the state vector given by the VQC consists of $2^n$ complex variables, where $n$ is the number of qubits, which in our case gives 16 numbers. To resemble this situation as close as possible we are extending the classical model by increasing the number of neurons in each layer (also the output one) to 32. We are using 32 real numbers to encode 16 complex ones.
+It's important to note, that the state vector given by the VQC consists of ![equation](https://latex.codecogs.com/svg.image?2^n) complex variables, where *n* is the number of qubits, which in our case gives 16 numbers. To resemble this situation as close as possible we are extending the classical model by increasing the number of neurons in each layer (also the output one) to 32. We are using 32 real numbers to encode 16 complex ones.
 
 It should be noted, that unfortunately due to this extension the agent's training becomes more unstable and converges more slowly.
 
