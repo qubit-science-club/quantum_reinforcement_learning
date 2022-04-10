@@ -68,6 +68,12 @@ def entanglement_entropy(state):
         S.append(S_rho_b)
     return np.array(S).numpy().mean()
 
+# ENTROPY 
+def classical_entropy(state):
+    state_temp = state.detach()
+    ket_2 = np.abs(state_temp)**2
+    return - torch.sum(ket_2 * np.log2(ket_2)) #zwraca jednoelementowy tensor torch'a
+
 
 ## Definition of Replay Memory
 ## If next_state == None
@@ -548,6 +554,7 @@ def deep_Q_Learning(alpha, gamma, epsilon, episodes, max_steps, n_tests, render 
 					# print(loss)
 					loss.backward()
 					entropies[2].append(entanglement_entropy(dev.state))
+					entropies[3].append(classical_entropy(dev.state))
 					return loss
 				opt.step(closure)
 
@@ -667,7 +674,7 @@ if __name__ =="__main__":
 
 	compute_entropy = True
 	if(compute_entropy):
-		entropies = [[],[],[]]
+		entropies = [[],[],[],[]]
 	train = True # Training from scratch
 	evaluate = False # Evaluation
 	if(train):
@@ -700,6 +707,7 @@ if __name__ =="__main__":
 			plt.plot(entropies[1].real,label="after loss")
 			plt.plot(entropies[2].real,":",label="after .backward")
 			plt.legend()
+			plt.savefig("entropies.png")
 			#plt.show()
 
 	if(evaluate):
