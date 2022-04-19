@@ -35,10 +35,11 @@ from copy import deepcopy
 from scipy.linalg import logm
 
 from gym.envs.registration import register
+
 register(
-    id='Deterministic-ShortestPath-4x4-FrozenLake-v0', # name given to this new environment
-    entry_point='ShortestPathFrozenLake:ShortestPathFrozenLake', # env entry point
-    kwargs={'map_name': '4x4', 'is_slippery': False} # argument passed to the env
+    id="Deterministic-ShortestPath-4x4-FrozenLake-v0",  # name given to this new environment
+    entry_point="ShortestPathFrozenLake:ShortestPathFrozenLake",  # env entry point
+    kwargs={"map_name": "4x4", "is_slippery": False},  # argument passed to the env
 )
 # register(
 #     id='Deterministic-4x4-FrozenLake-v0', # name given to this new environment
@@ -52,27 +53,30 @@ def entanglement_entropy(state):
     state = np.array(state, ndmin=2)
     ket = state.T
     bra = state.conj()
-    rho_final = np.outer(ket,bra)
+    rho_final = np.outer(ket, bra)
     num_wires = int(np.log2(state.size))
     S = []
     for d in range(1, num_wires):
-        Ia = np.identity(2**d)
-        Ib = np.identity(2**(num_wires-d))
-        Tr_a = np.empty([2**d, 2**(num_wires-d), 2**(num_wires-d)], dtype=complex)
-        for i in range(2**d):
+        Ia = np.identity(2 ** d)
+        Ib = np.identity(2 ** (num_wires - d))
+        Tr_a = np.empty(
+            [2 ** d, 2 ** (num_wires - d), 2 ** (num_wires - d)], dtype=complex
+        )
+        for i in range(2 ** d):
             ai = np.array(Ia[i], ndmin=2).T
-            Tr_a[i] = np.kron(ai.conj().T, Ib).dot(rho_final).dot(np.kron(ai,Ib))
+            Tr_a[i] = np.kron(ai.conj().T, Ib).dot(rho_final).dot(np.kron(ai, Ib))
         rho_b = Tr_a.sum(axis=0)
-        rho_b_l2 = logm(rho_b)/np.log(2.0)
-        S_rho_b = - rho_b.dot(rho_b_l2).trace()
+        rho_b_l2 = logm(rho_b) / np.log(2.0)
+        S_rho_b = -rho_b.dot(rho_b_l2).trace()
         S.append(S_rho_b)
     return np.array(S).numpy().mean()
 
-# ENTROPY 
+
+# ENTROPY
 def classical_entropy(state):
     state_temp = state.detach()
-    ket_2 = np.abs(state_temp)**2
-    return - torch.sum(ket_2 * np.log2(ket_2)) #zwraca jednoelementowy tensor torch'a
+    ket_2 = np.abs(state_temp) ** 2
+    return -torch.sum(ket_2 * np.log2(ket_2))  # zwraca jednoelementowy tensor torch'a
 
 
 ## Definition of Replay Memory
@@ -80,33 +84,34 @@ def classical_entropy(state):
 ## it is in the terminal state
 
 
-
-Transition = namedtuple('Transition',
-						('state', 'action', 'reward', 'next_state', 'done'))
+Transition = namedtuple(
+    "Transition", ("state", "action", "reward", "next_state", "done")
+)
 
 
 class ReplayMemory(object):
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.memory = []
+        self.position = 0
 
-	def __init__(self, capacity):
-		self.capacity = capacity
-		self.memory = []
-		self.position = 0
+    def push(self, *args):
+        """Saves a transition."""
+        if len(self.memory) < self.capacity:
+            self.memory.append(None)
+        self.memory[self.position] = Transition(*args)
+        self.position = (self.position + 1) % self.capacity
 
-	def push(self, *args):
-		"""Saves a transition."""
-		if len(self.memory) < self.capacity:
-			self.memory.append(None)
-		self.memory[self.position] = Transition(*args)
-		self.position = (self.position + 1) % self.capacity
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
 
-	def sample(self, batch_size):
-		return random.sample(self.memory, batch_size)
+    def output_all(self):
+        return self.memory
 
-	def output_all(self):
-		return self.memory
+    def __len__(self):
+        return len(self.memory)
 
-	def __len__(self):
-		return len(self.memory)
+
 ####
 
 
@@ -117,39 +122,50 @@ Note: the plotting code is origin from Yang, Chao-Han Huck, et al. "Enhanced Adv
 If you use the code in your research, please cite the original reference.
 """
 
-def plotTrainingResultCombined(_iter_index, _iter_reward, _iter_total_steps, _fileTitle):
-	fig, ax = plt.subplots()
-	# plt.yscale('log')
-	ax.plot(_iter_index, _iter_reward, '-b', label='Reward')
-	ax.plot(_iter_index, _iter_total_steps, '-r', label='Total Steps')
-	leg = ax.legend();
 
-	ax.set(xlabel='Iteration Index',
-		   title=_fileTitle)
-	fig.savefig(_fileTitle + "_"+ datetime.now().strftime("NO%Y%m%d%H%M%S") + ".png")
+def plotTrainingResultCombined(
+    _iter_index, _iter_reward, _iter_total_steps, _fileTitle
+):
+    fig, ax = plt.subplots()
+    # plt.yscale('log')
+    ax.plot(_iter_index, _iter_reward, "-b", label="Reward")
+    ax.plot(_iter_index, _iter_total_steps, "-r", label="Total Steps")
+    leg = ax.legend()
+
+    ax.set(xlabel="Iteration Index", title=_fileTitle)
+    fig.savefig(_fileTitle + "_" + datetime.now().strftime("NO%Y%m%d%H%M%S") + ".png")
+
 
 def plotTrainingResultReward(_iter_index, _iter_reward, _iter_total_steps, _fileTitle):
-	fig, ax = plt.subplots()
-	# plt.yscale('log')
-	ax.plot(_iter_index, _iter_reward, '-b', label='Reward')
-	# ax.plot(_iter_index, _iter_total_steps, '-r', label='Total Steps')
-	leg = ax.legend();
+    fig, ax = plt.subplots()
+    # plt.yscale('log')
+    ax.plot(_iter_index, _iter_reward, "-b", label="Reward")
+    # ax.plot(_iter_index, _iter_total_steps, '-r', label='Total Steps')
+    leg = ax.legend()
 
-	ax.set(xlabel='Iteration Index',
-		   title=_fileTitle)
-	fig.savefig(_fileTitle + "_REWARD" + "_"+ datetime.now().strftime("NO%Y%m%d%H%M%S") + ".png")
+    ax.set(xlabel="Iteration Index", title=_fileTitle)
+    fig.savefig(
+        _fileTitle
+        + "_REWARD"
+        + "_"
+        + datetime.now().strftime("NO%Y%m%d%H%M%S")
+        + ".png"
+    )
 
 
 ########################################
 
+
 def decimalToBinaryFixLength(_length, _decimal):
-	binNum = bin(int(_decimal))[2:]
-	outputNum = [int(item) for item in binNum]
-	if len(outputNum) < _length:
-		outputNum = np.concatenate((np.zeros((_length-len(outputNum),)),np.array(outputNum)))
-	else:
-		outputNum = np.array(outputNum)
-	return outputNum
+    binNum = bin(int(_decimal))[2:]
+    outputNum = [int(item) for item in binNum]
+    if len(outputNum) < _length:
+        outputNum = np.concatenate(
+            (np.zeros((_length - len(outputNum),)), np.array(outputNum))
+        )
+    else:
+        outputNum = np.array(outputNum)
+    return outputNum
 
 
 ## PennyLane Part ##
@@ -158,83 +174,80 @@ def decimalToBinaryFixLength(_length, _decimal):
 dtype = torch.DoubleTensor
 
 ## Define a FOUR qubit system
-dev = qml.device('default.qubit', wires=4)
+dev = qml.device("default.qubit", wires=4)
 # dev = qml.device('qiskit.basicaer', wires=4)
 def statepreparation(a):
 
-	"""Quantum circuit to encode the input vector into variational params
+    """Quantum circuit to encode the input vector into variational params
 
 	Args:
 		a: feature vector of rad and rad_square => np.array([rad_X_0, rad_X_1, rad_square_X_0, rad_square_X_1])
 	"""
 
-	# Rot to computational basis encoding
-	# a = [a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8]
+    # Rot to computational basis encoding
+    # a = [a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8]
 
-	for ind in range(len(a)):
-		qml.RX(np.pi * a[ind], wires=ind)
-		qml.RZ(np.pi * a[ind], wires=ind)
+    for ind in range(len(a)):
+        qml.RX(np.pi * a[ind], wires=ind)
+        qml.RZ(np.pi * a[ind], wires=ind)
 
 
 def layer(W):
-	""" Single layer of the variational classifier.
+    """ Single layer of the variational classifier.
 
 	Args:
 		W (array[float]): 2-d array of variables for one layer
 	"""
 
-	qml.CNOT(wires=[0, 1])
-	qml.CNOT(wires=[1, 2])
-	qml.CNOT(wires=[2, 3])
+    qml.CNOT(wires=[0, 1])
+    qml.CNOT(wires=[1, 2])
+    qml.CNOT(wires=[2, 3])
+
+    qml.Rot(W[0, 0], W[0, 1], W[0, 2], wires=0)
+    qml.Rot(W[1, 0], W[1, 1], W[1, 2], wires=1)
+    qml.Rot(W[2, 0], W[2, 1], W[2, 2], wires=2)
+    qml.Rot(W[3, 0], W[3, 1], W[3, 2], wires=3)
 
 
-	qml.Rot(W[0, 0], W[0, 1], W[0, 2], wires=0)
-	qml.Rot(W[1, 0], W[1, 1], W[1, 2], wires=1)
-	qml.Rot(W[2, 0], W[2, 1], W[2, 2], wires=2)
-	qml.Rot(W[3, 0], W[3, 1], W[3, 2], wires=3)
-
-
-
-
-@qml.qnode(dev, interface='torch')
+@qml.qnode(dev, interface="torch")
 def circuit(weights, angles=None):
-	"""The circuit of the variational classifier."""
-	# Can consider different expectation value
-	# PauliX , PauliY , PauliZ , Identity
+    """The circuit of the variational classifier."""
+    # Can consider different expectation value
+    # PauliX , PauliY , PauliZ , Identity
 
-	statepreparation(angles)
+    statepreparation(angles)
 
-	for W in weights:
-		layer(W)
+    for W in weights:
+        layer(W)
 
-	return [qml.expval(qml.PauliZ(ind)) for ind in range(4)]
+    return [qml.expval(qml.PauliZ(ind)) for ind in range(4)]
 
 
-def variational_classifier(var_Q_circuit, var_Q_bias , angles=None):
-	"""The variational classifier."""
+def variational_classifier(var_Q_circuit, var_Q_bias, angles=None):
+    """The variational classifier."""
 
-	# Change to SoftMax???
+    # Change to SoftMax???
 
-	weights = var_Q_circuit
-	# bias_1 = var_Q_bias[0]
-	# bias_2 = var_Q_bias[1]
-	# bias_3 = var_Q_bias[2]
-	# bias_4 = var_Q_bias[3]
-	# bias_5 = var_Q_bias[4]
-	# bias_6 = var_Q_bias[5]
+    weights = var_Q_circuit
+    # bias_1 = var_Q_bias[0]
+    # bias_2 = var_Q_bias[1]
+    # bias_3 = var_Q_bias[2]
+    # bias_4 = var_Q_bias[3]
+    # bias_5 = var_Q_bias[4]
+    # bias_6 = var_Q_bias[5]
 
-	# raw_output = circuit(weights, angles=angles) + np.array([bias_1,bias_2,bias_3,bias_4,bias_5,bias_6])
-	raw_output = circuit(weights, angles=angles) + var_Q_bias
+    # raw_output = circuit(weights, angles=angles) + np.array([bias_1,bias_2,bias_3,bias_4,bias_5,bias_6])
+    raw_output = circuit(weights, angles=angles) + var_Q_bias
 
-	# We are approximating Q Value
-	# Maybe softmax is no need
-	# softMaxOutPut = np.exp(raw_output) / np.exp(raw_output).sum()
+    # We are approximating Q Value
+    # Maybe softmax is no need
+    # softMaxOutPut = np.exp(raw_output) / np.exp(raw_output).sum()
 
-	return raw_output
+    return raw_output
 
 
 def square_loss(labels, predictions):
-	""" Square loss function
+    """ Square loss function
 
 	Args:
 		labels (array[float]): 1-d array of labels
@@ -242,21 +255,22 @@ def square_loss(labels, predictions):
 	Returns:
 		float: square loss
 	"""
-	loss = 0
-	for l, p in zip(labels, predictions):
-	    loss = loss + (l - p) ** 2
-	loss = loss / len(labels)
-	# print("LOSS")
+    loss = 0
+    for l, p in zip(labels, predictions):
+        loss = loss + (l - p) ** 2
+    loss = loss / len(labels)
+    # print("LOSS")
 
-	# print(loss)
+    # print(loss)
 
-	# output = torch.abs(predictions - labels)**2
-	# output = torch.sum(output) / len(labels)
+    # output = torch.abs(predictions - labels)**2
+    # output = torch.sum(output) / len(labels)
 
-	# loss = nn.MSELoss()
-	# output = loss(labels.double(), predictions.double())
+    # loss = nn.MSELoss()
+    # output = loss(labels.double(), predictions.double())
 
-	return loss
+    return loss
+
 
 # def square_loss(labels, predictions):
 # 	""" Square loss function
@@ -285,8 +299,9 @@ def square_loss(labels, predictions):
 
 # 	return output
 
+
 def abs_loss(labels, predictions):
-	""" Square loss function
+    """ Square loss function
 
 	Args:
 		labels (array[float]): 1-d array of labels
@@ -294,26 +309,27 @@ def abs_loss(labels, predictions):
 	Returns:
 		float: square loss
 	"""
-	# In Deep Q Learning
-	# labels = target_action_value_Q
-	# predictions = action_value_Q
+    # In Deep Q Learning
+    # labels = target_action_value_Q
+    # predictions = action_value_Q
 
-	# loss = 0
-	# for l, p in zip(labels, predictions):
-	# 	loss = loss + (l - p) ** 2
-	# loss = loss / len(labels)
+    # loss = 0
+    # for l, p in zip(labels, predictions):
+    # 	loss = loss + (l - p) ** 2
+    # loss = loss / len(labels)
 
-	# loss = nn.MSELoss()
-	output = torch.abs(predictions - labels)
-	output = torch.sum(output) / len(labels)
-	# output = loss(torch.tensor(predictions), torch.tensor(labels))
-	# print("LOSS OUTPUT")
-	# print(output)
+    # loss = nn.MSELoss()
+    output = torch.abs(predictions - labels)
+    output = torch.sum(output) / len(labels)
+    # output = loss(torch.tensor(predictions), torch.tensor(labels))
+    # print("LOSS OUTPUT")
+    # print(output)
 
-	return output
+    return output
+
 
 def huber_loss(labels, predictions):
-	""" Square loss function
+    """ Square loss function
 
 	Args:
 		labels (array[float]): 1-d array of labels
@@ -321,78 +337,100 @@ def huber_loss(labels, predictions):
 	Returns:
 		float: square loss
 	"""
-	# In Deep Q Learning
-	# labels = target_action_value_Q
-	# predictions = action_value_Q
+    # In Deep Q Learning
+    # labels = target_action_value_Q
+    # predictions = action_value_Q
 
-	# loss = 0
-	# for l, p in zip(labels, predictions):
-	# 	loss = loss + (l - p) ** 2
-	# loss = loss / len(labels)
+    # loss = 0
+    # for l, p in zip(labels, predictions):
+    # 	loss = loss + (l - p) ** 2
+    # loss = loss / len(labels)
 
-	# loss = nn.MSELoss()
-	loss = nn.SmoothL1Loss()
-	# output = loss(torch.tensor(predictions), torch.tensor(labels))
-	# print("LOSS OUTPUT")
-	# print(output)
+    # loss = nn.MSELoss()
+    loss = nn.SmoothL1Loss()
+    # output = loss(torch.tensor(predictions), torch.tensor(labels))
+    # print("LOSS OUTPUT")
+    # print(output)
 
-	return loss(labels, predictions)
+    return loss(labels, predictions)
 
 
 def cost(var_Q_circuit, var_Q_bias, features, labels):
-	"""Cost (error) function to be minimized."""
+    """Cost (error) function to be minimized."""
 
-	# predictions = [variational_classifier(weights, angles=f) for f in features]
-	# Torch data type??
+    # predictions = [variational_classifier(weights, angles=f) for f in features]
+    # Torch data type??
 
-	predictions = [variational_classifier(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, angles=decimalToBinaryFixLength(4,item.state))[item.action] for item in features]
-	# predictions = torch.tensor(predictions,requires_grad=True)
-	# labels = torch.tensor(labels)
-	# print("PRIDICTIONS:")
-	# print(predictions)
-	# print("LABELS:")
-	# print(labels)
+    predictions = [
+        variational_classifier(
+            var_Q_circuit=var_Q_circuit,
+            var_Q_bias=var_Q_bias,
+            angles=decimalToBinaryFixLength(4, item.state),
+        )[item.action]
+        for item in features
+    ]
+    # predictions = torch.tensor(predictions,requires_grad=True)
+    # labels = torch.tensor(labels)
+    # print("PRIDICTIONS:")
+    # print(predictions)
+    # print("LABELS:")
+    # print(labels)
 
-	return square_loss(labels, predictions)
+    return square_loss(labels, predictions)
 
 
 #############################
 
+
 def epsilon_greedy(var_Q_circuit, var_Q_bias, epsilon, n_actions, s, train=False):
-	"""
+    """
 	@param Q Q values state x action -> value
 	@param epsilon for exploration
 	@param s number of states
 	@param train if true then no random actions selected
 	"""
 
-	# Modify to incorporate with Variational Quantum Classifier
-	# epsilon should change along training
-	# In the beginning => More Exploration
-	# In the end => More Exploitation
+    # Modify to incorporate with Variational Quantum Classifier
+    # epsilon should change along training
+    # In the beginning => More Exploration
+    # In the end => More Exploitation
 
-	# More Random
-	#np.random.seed(int(datetime.now().strftime("%S%f")))
+    # More Random
+    # np.random.seed(int(datetime.now().strftime("%S%f")))
+
+    if train or np.random.rand() < ((epsilon / n_actions) + (1 - epsilon)):
+        # action = np.argmax(Q[s, :])
+        # variational classifier output is torch tensor
+        # action = np.argmax(variational_classifier(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, angles = decimalToBinaryFixLength(9,s)))
+        action = torch.argmax(
+            variational_classifier(
+                var_Q_circuit=var_Q_circuit,
+                var_Q_bias=var_Q_bias,
+                angles=decimalToBinaryFixLength(4, s),
+            )
+        )
+        # after circuit() dev.state changes so we can compute entropy
+        # if(compute_entropy):
+        # 	S = entanglement_entropy(dev.state) #dev is global variable
+        # 	entropies.append(S)
+    else:
+        # need to be torch tensor
+        action = torch.tensor(np.random.randint(0, n_actions))
+    return action
 
 
-	if train or np.random.rand() < ((epsilon/n_actions)+(1-epsilon)):
-		# action = np.argmax(Q[s, :])
-		# variational classifier output is torch tensor
-		# action = np.argmax(variational_classifier(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, angles = decimalToBinaryFixLength(9,s)))
-		action = torch.argmax(variational_classifier(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, angles = decimalToBinaryFixLength(4,s)))
-		# after circuit() dev.state changes so we can compute entropy
-		# if(compute_entropy):
-		# 	S = entanglement_entropy(dev.state) #dev is global variable
-		# 	entropies.append(S)
-	else:
-		# need to be torch tensor
-		action = torch.tensor(np.random.randint(0, n_actions))
-	return action
-
-
-
-def deep_Q_Learning(alpha, gamma, epsilon, episodes, max_steps, n_tests, render = False, test=False, early_stopping_threshold=100):
-	"""
+def deep_Q_Learning(
+    alpha,
+    gamma,
+    epsilon,
+    episodes,
+    max_steps,
+    n_tests,
+    render=False,
+    test=False,
+    early_stopping_threshold=100,
+):
+    """
 	@param alpha learning rate
 	@param gamma decay factor
 	@param epsilon for exploration
@@ -400,315 +438,411 @@ def deep_Q_Learning(alpha, gamma, epsilon, episodes, max_steps, n_tests, render 
 	@param n_tests number of test episodes
 	"""
 
+    env = gym.make("Deterministic-ShortestPath-4x4-FrozenLake-v0")
+    # env = gym.make('Deterministic-4x4-FrozenLake-v0')
+    n_states, n_actions = env.observation_space.n, env.action_space.n
+    print("NUMBER OF STATES:" + str(n_states))
+    print("NUMBER OF ACTIONS:" + str(n_actions))
 
-	env = gym.make('Deterministic-ShortestPath-4x4-FrozenLake-v0')
-	# env = gym.make('Deterministic-4x4-FrozenLake-v0')
-	n_states, n_actions = env.observation_space.n, env.action_space.n
-	print("NUMBER OF STATES:" + str(n_states))
-	print("NUMBER OF ACTIONS:" + str(n_actions))
+    # Initialize Q function approximator variational quantum circuit
+    # initialize weight layers
 
-	# Initialize Q function approximator variational quantum circuit
-	# initialize weight layers
+    num_qubits = 4
+    num_layers = 2
+    # var_init = (0.01 * np.random.randn(num_layers, num_qubits, 3), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
-	num_qubits = 4
-	num_layers = 2
-	# var_init = (0.01 * np.random.randn(num_layers, num_qubits, 3), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    var_init_circuit = Variable(
+        torch.tensor(
+            0.01 * np.random.randn(num_layers, num_qubits, 3), device="cpu"
+        ).type(dtype),
+        requires_grad=True,
+    )
+    var_init_bias = Variable(
+        torch.tensor([0.0, 0.0, 0.0, 0.0], device="cpu").type(dtype), requires_grad=True
+    )
 
-	var_init_circuit = Variable(torch.tensor(0.01 * np.random.randn(num_layers, num_qubits, 3), device='cpu').type(dtype), requires_grad=True)
-	var_init_bias = Variable(torch.tensor([0.0, 0.0, 0.0, 0.0], device='cpu').type(dtype), requires_grad=True)
+    # Define the two Q value function initial parameters
+    # Use np copy() function to DEEP COPY the numpy array
+    var_Q_circuit = var_init_circuit
+    var_Q_bias = var_init_bias
+    # print("INIT PARAMS")
+    # print(var_Q_circuit)
 
-	# Define the two Q value function initial parameters
-	# Use np copy() function to DEEP COPY the numpy array
-	var_Q_circuit = var_init_circuit
-	var_Q_bias = var_init_bias
-	# print("INIT PARAMS")
-	# print(var_Q_circuit)
+    var_target_Q_circuit = var_Q_circuit.clone().detach()
+    var_target_Q_bias = var_Q_bias.clone().detach()
 
-	var_target_Q_circuit = var_Q_circuit.clone().detach()
-	var_target_Q_bias = var_Q_bias.clone().detach()
+    ##########################
+    # Optimization method => random select train batch from replay memory
+    # and opt
 
-	##########################
-	# Optimization method => random select train batch from replay memory
-	# and opt
+    # opt = NesterovMomentumOptimizer(0.01)
 
-	# opt = NesterovMomentumOptimizer(0.01)
+    # opt = torch.optim.Adam([var_Q_circuit, var_Q_bias], lr = 0.1)
+    # opt = torch.optim.SGD([var_Q_circuit, var_Q_bias], lr=0.1, momentum=0.9)
+    opt = torch.optim.RMSprop(
+        [var_Q_circuit, var_Q_bias],
+        lr=0.01,
+        alpha=0.99,
+        eps=1e-08,
+        weight_decay=0,
+        momentum=0,
+        centered=False,
+    )
 
-	# opt = torch.optim.Adam([var_Q_circuit, var_Q_bias], lr = 0.1)
-	# opt = torch.optim.SGD([var_Q_circuit, var_Q_bias], lr=0.1, momentum=0.9)
-	opt = torch.optim.RMSprop([var_Q_circuit, var_Q_bias], lr=0.01, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
+    ## NEed to move out of the function
+    TARGET_UPDATE = 20
+    batch_size = 5
+    OPTIMIZE_STEPS = 5
+    ##
 
-	## NEed to move out of the function
-	TARGET_UPDATE = 20
-	batch_size = 5
-	OPTIMIZE_STEPS = 5
-	##
+    target_update_counter = 0
 
+    iter_index = []
+    iter_reward = []
+    iter_total_steps = []
 
-	target_update_counter = 0
+    cost_list = []
 
-	iter_index = []
-	iter_reward = []
-	iter_total_steps = []
+    timestep_reward = []
 
-	cost_list = []
+    # Demo of generating an ACTION
+    # Output a numpy array of value for each action
 
+    # Define the replay memory
+    # Each transition:
+    # (s_t_0, a_t_0, r_t, s_t_1, 'DONE')
 
-	timestep_reward = []
+    memory = ReplayMemory(80)
 
+    # Input Angle = decimalToBinaryFixLength(9, stateInd)
+    # Input Angle is a numpy array
 
-	# Demo of generating an ACTION
-	# Output a numpy array of value for each action
+    # stateVector = decimalToBinaryFixLength(9, stateInd)
 
-	# Define the replay memory
-	# Each transition:
-	# (s_t_0, a_t_0, r_t, s_t_1, 'DONE')
+    # q_val_s_t = variational_classifier(var_Q, angles=stateVector)
+    # # action_t = q_val_s_t.argmax()
+    # action_t = epsilon_greedy(var_Q, epsilon, n_actions, s)
+    # q_val_target_s_t = variational_classifier(var_target_Q, angles=stateVector)
 
-	memory = ReplayMemory(80)
+    # train the variational classifier
 
-	# Input Angle = decimalToBinaryFixLength(9, stateInd)
-	# Input Angle is a numpy array
+    episode = 0
+    episodes_since_last_reward_change = 0
+    last_total_reward = -np.inf  # infinity
 
-	# stateVector = decimalToBinaryFixLength(9, stateInd)
+    # for episode in range(episodes):
+    while (
+        episode < episodes
+        and episodes_since_last_reward_change <= early_stopping_threshold
+    ):
+        print(f"Episode: {episode}")
+        # Output s in decimal format
+        s = env.reset()
+        # Doing epsilog greedy action selection
+        # With var_Q
+        a = epsilon_greedy(
+            var_Q_circuit=var_Q_circuit,
+            var_Q_bias=var_Q_bias,
+            epsilon=epsilon,
+            n_actions=n_actions,
+            s=s,
+        ).item()
+        t = 0
+        total_reward = 0
+        done = False
 
-	# q_val_s_t = variational_classifier(var_Q, angles=stateVector)
-	# # action_t = q_val_s_t.argmax()
-	# action_t = epsilon_greedy(var_Q, epsilon, n_actions, s)
-	# q_val_target_s_t = variational_classifier(var_target_Q, angles=stateVector)
+        while t < max_steps:
+            if render:
+                print("###RENDER###")
+                env.render()
+                print("###RENDER###")
+            t += 1
 
-	# train the variational classifier
+            target_update_counter += 1
 
-	episode = 0
-	episodes_since_last_reward_change = 0
-	last_total_reward = -np.inf # infinity
+            # Execute the action
+            s_, reward, done, info = env.step(a)
+            # print("Reward : " + str(reward))
+            # print("Done : " + str(done))
+            total_reward += reward
+            # a_ = np.argmax(Q[s_, :])
+            a_ = epsilon_greedy(
+                var_Q_circuit=var_Q_circuit,
+                var_Q_bias=var_Q_bias,
+                epsilon=epsilon,
+                n_actions=n_actions,
+                s=s_,
+            ).item()
 
-	# for episode in range(episodes):
-	while episode < episodes and episodes_since_last_reward_change <= early_stopping_threshold:
-		print(f"Episode: {episode}")
-		# Output s in decimal format
-		s = env.reset()
-		# Doing epsilog greedy action selection
-		# With var_Q
-		a = epsilon_greedy(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, epsilon = epsilon, n_actions = n_actions, s = s).item()
-		t = 0
-		total_reward = 0
-		done = False
+            # print("ACTION:")
+            # print(a_)
 
-		while t < max_steps:
-			if render:
-				print("###RENDER###")
-				env.render()
-				print("###RENDER###")
-			t += 1
+            memory.push(s, a, reward, s_, done)
 
-			target_update_counter += 1
+            if len(memory) > batch_size:
 
-			# Execute the action
-			s_, reward, done, info = env.step(a)
-			# print("Reward : " + str(reward))
-			# print("Done : " + str(done))
-			total_reward += reward
-			# a_ = np.argmax(Q[s_, :])
-			a_ = epsilon_greedy(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, epsilon = epsilon, n_actions = n_actions, s = s_).item()
+                # Sampling Mini_Batch from Replay Memory
 
-			# print("ACTION:")
-			# print(a_)
+                batch_sampled = memory.sample(batch_size=batch_size)
 
-			memory.push(s, a, reward, s_, done)
+                # Transition = (s_t, a_t, r_t, s_t+1, done(True / False))
 
-			if len(memory) > batch_size:
+                # item.state => state
+                # item.action => action taken at state s
+                # item.reward => reward given based on (s,a)
+                # item.next_state => state arrived based on (s,a)
 
-				# Sampling Mini_Batch from Replay Memory
+                Q_target = [
+                    item.reward
+                    + (1 - int(item.done))
+                    * gamma
+                    * torch.max(
+                        variational_classifier(
+                            var_Q_circuit=var_target_Q_circuit,
+                            var_Q_bias=var_target_Q_bias,
+                            angles=decimalToBinaryFixLength(4, item.next_state),
+                        )
+                    )
+                    for item in batch_sampled
+                ]
+                # Q_prediction = [variational_classifier(var_Q, angles=decimalToBinaryFixLength(9,item.state))[item.action] for item in batch_sampled ]
 
-				batch_sampled = memory.sample(batch_size = batch_size)
+                # Gradient Descent
+                # cost(weights, features, labels)
+                # square_loss_training = square_loss(labels = Q_target, Q_predictions)
+                # print("UPDATING PARAMS...")
 
-				# Transition = (s_t, a_t, r_t, s_t+1, done(True / False))
+                # CHANGE TO TORCH OPTIMIZER
 
-				# item.state => state
-				# item.action => action taken at state s
-				# item.reward => reward given based on (s,a)
-				# item.next_state => state arrived based on (s,a)
+                # var_Q = opt.step(lambda v: cost(v, batch_sampled, Q_target), var_Q)
+                # opt.zero_grad()
+                # loss = cost(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, features = batch_sampled, labels = Q_target)
+                # print(loss)
+                # FIX this gradient error
+                # loss.backward()
+                # opt.step(loss)
 
-				Q_target = [item.reward + (1 - int(item.done)) * gamma * torch.max(variational_classifier(var_Q_circuit = var_target_Q_circuit, var_Q_bias = var_target_Q_bias, angles=decimalToBinaryFixLength(4,item.next_state))) for item in batch_sampled]
-				# Q_prediction = [variational_classifier(var_Q, angles=decimalToBinaryFixLength(9,item.state))[item.action] for item in batch_sampled ]
+                def closure():
+                    opt.zero_grad()
+                    entropies[0].append(entanglement_entropy(dev.state))
+                    loss = cost(
+                        var_Q_circuit=var_Q_circuit,
+                        var_Q_bias=var_Q_bias,
+                        features=batch_sampled,
+                        labels=Q_target,
+                    )
+                    entropies[1].append(entanglement_entropy(dev.state))
+                    # print(loss)
+                    loss.backward()
+                    entropies[2].append(entanglement_entropy(dev.state))
+                    entropies[3].append(classical_entropy(dev.state))
+                    return loss
 
-				# Gradient Descent
-				# cost(weights, features, labels)
-				# square_loss_training = square_loss(labels = Q_target, Q_predictions)
-				# print("UPDATING PARAMS...")
+                opt.step(closure)
 
-				# CHANGE TO TORCH OPTIMIZER
+                # print("UPDATING PARAMS COMPLETED")
+                current_replay_memory = memory.output_all()
+                current_target_for_replay_memory = [
+                    item.reward
+                    + (1 - int(item.done))
+                    * gamma
+                    * torch.max(
+                        variational_classifier(
+                            var_Q_circuit=var_target_Q_circuit,
+                            var_Q_bias=var_target_Q_bias,
+                            angles=decimalToBinaryFixLength(4, item.next_state),
+                        )
+                    )
+                    for item in current_replay_memory
+                ]
+                # current_target_for_replay_memory = [item.reward + (1 - int(item.done)) * gamma * np.max(variational_classifier(var_target_Q, angles=decimalToBinaryFixLength(9,item.next_state))) for item in current_replay_memory]
 
-				# var_Q = opt.step(lambda v: cost(v, batch_sampled, Q_target), var_Q)
-				# opt.zero_grad()
-				# loss = cost(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, features = batch_sampled, labels = Q_target)
-				# print(loss)
-				# FIX this gradient error
-				# loss.backward()
-				# opt.step(loss)
+                # if t%5 == 0:
+                # 	cost_ = cost(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, features = current_replay_memory, labels = current_target_for_replay_memory)
+                # 	print("Cost: ")
+                # 	print(cost_.item())
+                # 	cost_list.append(cost_)
 
-				def closure():
-					opt.zero_grad()
-					entropies[0].append(entanglement_entropy(dev.state))
-					loss = cost(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, features = batch_sampled, labels = Q_target)
-					entropies[1].append(entanglement_entropy(dev.state))
-					# print(loss)
-					loss.backward()
-					entropies[2].append(entanglement_entropy(dev.state))
-					entropies[3].append(classical_entropy(dev.state))
-					return loss
-				opt.step(closure)
+            if target_update_counter > TARGET_UPDATE:
+                print("UPDATING TARGET CIRCUIT...")
 
-				# print("UPDATING PARAMS COMPLETED")
-				current_replay_memory = memory.output_all()
-				current_target_for_replay_memory = [item.reward + (1 - int(item.done)) * gamma * torch.max(variational_classifier(var_Q_circuit = var_target_Q_circuit, var_Q_bias = var_target_Q_bias, angles=decimalToBinaryFixLength(4,item.next_state))) for item in current_replay_memory]
-				# current_target_for_replay_memory = [item.reward + (1 - int(item.done)) * gamma * np.max(variational_classifier(var_target_Q, angles=decimalToBinaryFixLength(9,item.next_state))) for item in current_replay_memory]
+                var_target_Q_circuit = var_Q_circuit.clone().detach()
+                var_target_Q_bias = var_Q_bias.clone().detach()
 
-				# if t%5 == 0:
-				# 	cost_ = cost(var_Q_circuit = var_Q_circuit, var_Q_bias = var_Q_bias, features = current_replay_memory, labels = current_target_for_replay_memory)
-				# 	print("Cost: ")
-				# 	print(cost_.item())
-				# 	cost_list.append(cost_)
+                target_update_counter = 0
 
+            s, a = s_, a_
 
-			if target_update_counter > TARGET_UPDATE:
-				print("UPDATING TARGET CIRCUIT...")
+            if done:
+                if render:
+                    print("###FINAL RENDER###")
+                    env.render()
+                    print("###FINAL RENDER###")
+                    print(f"This episode took {t} timesteps and reward: {total_reward}")
+                epsilon = epsilon / ((episode / 100) + 1)
+                # print("Q Circuit Params:")
+                # print(var_Q_circuit)
+                print(f"This episode took {t} timesteps and reward: {total_reward}")
+                timestep_reward.append(total_reward)
+                iter_index.append(episode)
+                iter_reward.append(total_reward)
+                iter_total_steps.append(t)
+                break
 
-				var_target_Q_circuit = var_Q_circuit.clone().detach()
-				var_target_Q_bias = var_Q_bias.clone().detach()
+        ########################################################################
+        # EARLY STOPPING
+        ########################################################################
+        if total_reward != last_total_reward:
+            last_total_reward = total_reward
+            episodes_since_last_reward_change = 0
+        elif (
+            total_reward == last_total_reward and total_reward > 0
+        ):  # Increment the counter only if the reward was positive
+            episodes_since_last_reward_change += 1
+        ########################################################################
 
-				target_update_counter = 0
+        # Increment the episode's index
+        episode += 1
 
-			s, a = s_, a_
-
-			if done:
-				if render:
-					print("###FINAL RENDER###")
-					env.render()
-					print("###FINAL RENDER###")
-					print(f"This episode took {t} timesteps and reward: {total_reward}")
-				epsilon = epsilon / ((episode/100) + 1)
-				# print("Q Circuit Params:")
-				# print(var_Q_circuit)
-				print(f"This episode took {t} timesteps and reward: {total_reward}")
-				timestep_reward.append(total_reward)
-				iter_index.append(episode)
-				iter_reward.append(total_reward)
-				iter_total_steps.append(t)
-				break
-
-
-		########################################################################
-		# EARLY STOPPING
-		########################################################################
-		if total_reward != last_total_reward:
-			last_total_reward = total_reward
-			episodes_since_last_reward_change = 0
-		elif total_reward == last_total_reward and total_reward > 0: # Increment the counter only if the reward was positive
-			episodes_since_last_reward_change += 1
-		########################################################################
-
-		# Increment the episode's index
-		episode += 1
-
-	if render:
-		print(f"Here are the Q values:\n{var_Q_circuit}\nTesting now:")
-	if test:
-		test_agent(var_Q_circuit, var_Q_bias, env, n_tests, n_actions)
-	return timestep_reward, iter_index, iter_reward, iter_total_steps, var_Q_circuit, var_Q_bias
+    if render:
+        print(f"Here are the Q values:\n{var_Q_circuit}\nTesting now:")
+    if test:
+        test_agent(var_Q_circuit, var_Q_bias, env, n_tests, n_actions)
+    return (
+        timestep_reward,
+        iter_index,
+        iter_reward,
+        iter_total_steps,
+        var_Q_circuit,
+        var_Q_bias,
+    )
 
 
 def test_agent(var_Q_circuit, var_Q_bias, env, n_tests, n_actions, delay=1):
-	for test in range(n_tests):
-		print(f"Test #{test}")
-		s = env.reset()
-		done = False
-		epsilon = 0
-		while True:
-			time.sleep(delay)
-			env.render()
-			a = epsilon_greedy(var_Q_circuit, var_Q_bias, epsilon, n_actions, s, train=False).item()
-			print(f"Chose action {a} for state {s}")
-			s, reward, done, info = env.step(a)
-			if done:
-				if reward > 0:
-					print("Reached goal!")
-				else:
-					print("Shit! dead x_x")
-				time.sleep(3)
-				break
+    for test in range(n_tests):
+        print(f"Test #{test}")
+        s = env.reset()
+        done = False
+        epsilon = 0
+        while True:
+            time.sleep(delay)
+            env.render()
+            a = epsilon_greedy(
+                var_Q_circuit, var_Q_bias, epsilon, n_actions, s, train=False
+            ).item()
+            print(f"Chose action {a} for state {s}")
+            s, reward, done, info = env.step(a)
+            if done:
+                if reward > 0:
+                    print("Reached goal!")
+                else:
+                    print("Shit! dead x_x")
+                time.sleep(3)
+                break
+
 
 # Should add plotting function and KeyboardInterrupt Handler
 
 # run circuit with trained params
 def run(n_tests):
-	env = gym.make('Deterministic-ShortestPath-4x4-FrozenLake-v0')
-	# env = gym.make('Deterministic-4x4-FrozenLake-v0')
-	n_states, n_actions = env.observation_space.n, env.action_space.n
-	print("NUMBER OF STATES:" + str(n_states))
-	print("NUMBER OF ACTIONS:" + str(n_actions))
+    env = gym.make("Deterministic-ShortestPath-4x4-FrozenLake-v0")
+    # env = gym.make('Deterministic-4x4-FrozenLake-v0')
+    n_states, n_actions = env.observation_space.n, env.action_space.n
+    print("NUMBER OF STATES:" + str(n_states))
+    print("NUMBER OF ACTIONS:" + str(n_actions))
 
-	# Initialize Q function approximator variational quantum circuit
-	# initialize weight layers
+    # Initialize Q function approximator variational quantum circuit
+    # initialize weight layers
 
-	with open("VQDQN_Frozen_Lake_NonSlip_Dynamic_Epsilon_RMSPropNO20190628142021_var_Q_circuit.txt", "rb") as fp:
-		var_Q_circuit = pickle.load(fp)
+    with open(
+        "VQDQN_Frozen_Lake_NonSlip_Dynamic_Epsilon_RMSPropNO20190628142021_var_Q_circuit.txt",
+        "rb",
+    ) as fp:
+        var_Q_circuit = pickle.load(fp)
 
-	with open("VQDQN_Frozen_Lake_NonSlip_Dynamic_Epsilon_RMSPropNO20190628142021_var_Q_bias" + ".txt", "rb") as fp:
-		var_Q_bias = pickle.load(fp)
+    with open(
+        "VQDQN_Frozen_Lake_NonSlip_Dynamic_Epsilon_RMSPropNO20190628142021_var_Q_bias"
+        + ".txt",
+        "rb",
+    ) as fp:
+        var_Q_bias = pickle.load(fp)
 
-	# with open("_iter_reward" + ".txt", "rb") as fp:
-	# 	iter_reward = pickle.load(fp)
+    # with open("_iter_reward" + ".txt", "rb") as fp:
+    # 	iter_reward = pickle.load(fp)
 
-	test_agent(var_Q_circuit, var_Q_bias, env, n_tests, n_actions)
-
-
-
-if __name__ =="__main__":
-	alpha = 0.4
-	gamma = 0.999
-	epsilon = 0.999
-	episodes = 10000
-	max_steps = 2500
-	n_tests = 10
-	early_stopping_threshold = 20
-
-	compute_entropy = True
-	if(compute_entropy):
-		entropies = [[],[],[],[]]
-	train = True # Training from scratch
-	evaluate = False # Evaluation
-	if(train):
-		# timestep_reward, iter_index, iter_reward, iter_total_steps , var_Q_circuit, var_Q_bias = deep_Q_Learning(alpha, gamma, epsilon, episodes, max_steps, n_tests, render=False, test=False)
-		timestep_reward, iter_index, iter_reward, iter_total_steps , var_Q_circuit, var_Q_bias = deep_Q_Learning(alpha, gamma, epsilon, episodes, max_steps, n_tests, render=False, test=False, early_stopping_threshold=early_stopping_threshold)
-
-		print(timestep_reward)
+    test_agent(var_Q_circuit, var_Q_bias, env, n_tests, n_actions)
 
 
-		## Drawing Training Result ##
-		file_title = 'VQDQN_Frozen_Lake_NonSlip_Dynamic_Epsilon_RMSProp' + datetime.now().strftime("NO%Y%m%d%H%M%S")
+if __name__ == "__main__":
+    alpha = 0.4
+    gamma = 0.999
+    epsilon = 0.999
+    episodes = 10000
+    max_steps = 2500
+    n_tests = 10
+    early_stopping_threshold = 20
 
-		plotTrainingResultReward(_iter_index = iter_index, _iter_reward = iter_reward, _iter_total_steps = iter_total_steps, _fileTitle = 'Quantum_DQN_Frozen_Lake_NonSlip_Dynamic_Epsilon_RMSProp')
-		# plt.show()
-		## Saving the model
-		with open(file_title + "_var_Q_circuit" + ".txt", "wb") as fp:
-				pickle.dump(var_Q_circuit, fp)
+    compute_entropy = True
+    if compute_entropy:
+        entropies = [[], [], [], []]
+    train = True  # Training from scratch
+    evaluate = False  # Evaluation
+    if train:
+        # timestep_reward, iter_index, iter_reward, iter_total_steps , var_Q_circuit, var_Q_bias = deep_Q_Learning(alpha, gamma, epsilon, episodes, max_steps, n_tests, render=False, test=False)
+        (
+            timestep_reward,
+            iter_index,
+            iter_reward,
+            iter_total_steps,
+            var_Q_circuit,
+            var_Q_bias,
+        ) = deep_Q_Learning(
+            alpha,
+            gamma,
+            epsilon,
+            episodes,
+            max_steps,
+            n_tests,
+            render=False,
+            test=False,
+            early_stopping_threshold=early_stopping_threshold,
+        )
 
-		with open(file_title + "_var_Q_bias" + ".txt", "wb") as fp:
-				pickle.dump(var_Q_bias, fp)
+        print(timestep_reward)
 
-		with open(file_title + "_iter_reward" + ".txt", "wb") as fp:
-				pickle.dump(iter_reward, fp)
-		if(compute_entropy):
-			file = open("entropies.txt","wb")
-			entropies = np.array(entropies)
-			np.savetxt(file,entropies)
-			file.close()
-			plt.plot(entropies[0].real,label="before loss")
-			plt.plot(entropies[1].real,label="after loss")
-			plt.plot(entropies[2].real,":",label="after .backward")
-			plt.legend()
-			plt.savefig("entropies.png")
-			#plt.show()
+        ## Drawing Training Result ##
+        file_title = "VQDQN_Frozen_Lake_NonSlip_Dynamic_Epsilon_RMSProp" + datetime.now().strftime(
+            "NO%Y%m%d%H%M%S"
+        )
 
-	if(evaluate):
-		run(n_tests)
+        plotTrainingResultReward(
+            _iter_index=iter_index,
+            _iter_reward=iter_reward,
+            _iter_total_steps=iter_total_steps,
+            _fileTitle="Quantum_DQN_Frozen_Lake_NonSlip_Dynamic_Epsilon_RMSProp",
+        )
+        # plt.show()
+        ## Saving the model
+        with open(file_title + "_var_Q_circuit" + ".txt", "wb") as fp:
+            pickle.dump(var_Q_circuit, fp)
+
+        with open(file_title + "_var_Q_bias" + ".txt", "wb") as fp:
+            pickle.dump(var_Q_bias, fp)
+
+        with open(file_title + "_iter_reward" + ".txt", "wb") as fp:
+            pickle.dump(iter_reward, fp)
+        if compute_entropy:
+            file = open("entropies.txt", "wb")
+            entropies = np.array(entropies)
+            np.savetxt(file, entropies)
+            file.close()
+            plt.plot(entropies[0].real, label="before loss")
+            plt.plot(entropies[1].real, label="after loss")
+            plt.plot(entropies[2].real, ":", label="after .backward")
+            plt.legend()
+            plt.savefig("entropies.png")
+            # plt.show()
+
+    if evaluate:
+        run(n_tests)
+
