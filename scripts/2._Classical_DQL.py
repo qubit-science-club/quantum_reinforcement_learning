@@ -196,7 +196,7 @@ if __name__ == "__main__":
     axs.set_title("Move strategy from Qtable")
     axs.grid(which="major", alpha=0.4)
     axs.legend()
-    plt.savefig("../results/classical_DQL/entanglement.jpg", dpi=900)
+    plt.savefig("../results/classical_DQL/trained_strategy.jpg", dpi=900)
     plt.show()
     
     entropies = np.array(fl.entropies)
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     ax.plot(entropies, label="entglmt_entr Lax")
     ax.plot(cl_entropies, color='red', label="cl_entropy Rax", alpha=0.4)
     ax.legend()
-    plt.savefig("../results/classical_DQL/trained_strategy.jpg", dpi=900)
+    plt.savefig("../results/classical_DQL/entanglement.jpg", dpi=900)
     plt.show()
 
     plt.figure(figsize=[9,16])

@@ -97,7 +97,7 @@ axs.set_yticks(major_ticks)
 axs.set_title("Move strategy from Qtable")
 axs.grid(which="major", alpha=0.4)
 axs.legend()
-plt.savefig("../results/classical_QL/entanglement.jpg", dpi=900)
+plt.savefig("../results/classical_QL/trained_strategy.jpg", dpi=900)
 plt.show()
 
 
