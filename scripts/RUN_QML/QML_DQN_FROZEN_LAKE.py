@@ -50,7 +50,7 @@ register(
 
 # ENTANGLEMENT ENTROPY
 def entanglement_entropy(state):
-    state = np.array(state, ndmin=2)
+    state = np.array(state.detach(), ndmin=2)
     ket = state.T
     bra = state.conj()
     rho_final = np.outer(ket, bra)
@@ -180,9 +180,9 @@ def statepreparation(a):
 
     """Quantum circuit to encode the input vector into variational params
 
-	Args:
-		a: feature vector of rad and rad_square => np.array([rad_X_0, rad_X_1, rad_square_X_0, rad_square_X_1])
-	"""
+    Args:
+        a: feature vector of rad and rad_square => np.array([rad_X_0, rad_X_1, rad_square_X_0, rad_square_X_1])
+    """
 
     # Rot to computational basis encoding
     # a = [a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8]
@@ -195,9 +195,9 @@ def statepreparation(a):
 def layer(W):
     """ Single layer of the variational classifier.
 
-	Args:
-		W (array[float]): 2-d array of variables for one layer
-	"""
+    Args:
+        W (array[float]): 2-d array of variables for one layer
+    """
 
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
@@ -249,12 +249,12 @@ def variational_classifier(var_Q_circuit, var_Q_bias, angles=None):
 def square_loss(labels, predictions):
     """ Square loss function
 
-	Args:
-		labels (array[float]): 1-d array of labels
-		predictions (array[float]): 1-d array of predictions
-	Returns:
-		float: square loss
-	"""
+    Args:
+        labels (array[float]): 1-d array of labels
+        predictions (array[float]): 1-d array of predictions
+    Returns:
+        float: square loss
+    """
     loss = 0
     for l, p in zip(labels, predictions):
         loss = loss + (l - p) ** 2
@@ -303,12 +303,12 @@ def square_loss(labels, predictions):
 def abs_loss(labels, predictions):
     """ Square loss function
 
-	Args:
-		labels (array[float]): 1-d array of labels
-		predictions (array[float]): 1-d array of predictions
-	Returns:
-		float: square loss
-	"""
+    Args:
+        labels (array[float]): 1-d array of labels
+        predictions (array[float]): 1-d array of predictions
+    Returns:
+        float: square loss
+    """
     # In Deep Q Learning
     # labels = target_action_value_Q
     # predictions = action_value_Q
@@ -331,12 +331,12 @@ def abs_loss(labels, predictions):
 def huber_loss(labels, predictions):
     """ Square loss function
 
-	Args:
-		labels (array[float]): 1-d array of labels
-		predictions (array[float]): 1-d array of predictions
-	Returns:
-		float: square loss
-	"""
+    Args:
+        labels (array[float]): 1-d array of labels
+        predictions (array[float]): 1-d array of predictions
+    Returns:
+        float: square loss
+    """
     # In Deep Q Learning
     # labels = target_action_value_Q
     # predictions = action_value_Q
@@ -384,11 +384,11 @@ def cost(var_Q_circuit, var_Q_bias, features, labels):
 
 def epsilon_greedy(var_Q_circuit, var_Q_bias, epsilon, n_actions, s, train=False):
     """
-	@param Q Q values state x action -> value
-	@param epsilon for exploration
-	@param s number of states
-	@param train if true then no random actions selected
-	"""
+    @param Q Q values state x action -> value
+    @param epsilon for exploration
+    @param s number of states
+    @param train if true then no random actions selected
+    """
 
     # Modify to incorporate with Variational Quantum Classifier
     # epsilon should change along training
@@ -431,15 +431,17 @@ def deep_Q_Learning(
     early_stopping_threshold=100,
 ):
     """
-	@param alpha learning rate
-	@param gamma decay factor
-	@param epsilon for exploration
-	@param max_steps for max step in each episode
-	@param n_tests number of test episodes
-	"""
+    @param alpha learning rate
+    @param gamma decay factor
+    @param epsilon for exploration
+    @param max_steps for max step in each episode
+    @param n_tests number of test episodes
+    """
 
-    env = gym.make("Deterministic-ShortestPath-4x4-FrozenLake-v0")
+    # env = gym.make("Deterministic-ShortestPath-4x4-FrozenLake-v0")
     # env = gym.make('Deterministic-4x4-FrozenLake-v0')
+    env = gym.make("FrozenLake-v1", is_slippery=False)
+
     n_states, n_actions = env.observation_space.n, env.action_space.n
     print("NUMBER OF STATES:" + str(n_states))
     print("NUMBER OF ACTIONS:" + str(n_actions))
@@ -832,15 +834,18 @@ if __name__ == "__main__":
         with open(file_title + "_iter_reward" + ".txt", "wb") as fp:
             pickle.dump(iter_reward, fp)
         if compute_entropy:
-            file = open("entropies.txt", "wb")
-            entropies = np.array(entropies)
-            np.savetxt(file, entropies)
-            file.close()
-            plt.plot(entropies[0].real, label="before loss")
-            plt.plot(entropies[1].real, label="after loss")
-            plt.plot(entropies[2].real, ":", label="after .backward")
-            plt.legend()
-            plt.savefig("entropies.png")
+            with open("entropies.txt", "wb") as fp:
+                entropies = np.array(entropies)
+                np.savetxt(fp, entropies)
+
+            fig, ax = plt.subplots()
+            ax.plot(entropies[0].real, label="before loss")
+            ax.plot(entropies[1].real, label="after loss")
+            ax.plot(entropies[2].real, ":", label="after .backward")
+            ax.plot(entropies[3].real, ":", label="classical")
+            ax.set_title("Entropies")
+            fig.legend()
+            fig.savefig("entropies.png")
             # plt.show()
 
     if evaluate:
