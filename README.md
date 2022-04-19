@@ -1,4 +1,32 @@
-# quantum_reinforcement_learning
+# Quantum Reinforcement Learning
+
+## Requirements:
+
+Code was developed and run on `Python` version `3.9.11`. All main requirements are in [`requirements`](./requirements.txt) file.
+
+## Structure:
+
+```
+├───assets                              # assets for readme
+├───results                             # results from training
+│   ├───classical_QL                    # classical Q-learning results directory
+│   ├───classical_DQL                   # classical DQL results directory
+│   ├───classical_DQL_sim_quantum       # classical DQL simulating quantum model results directory
+│   └───...                             # quantum model results directory
+│
+├───scripts                             # scripts for generating results
+│   ├───src                             # source code directory
+│   │
+│   │   1._Classical_QL.py              # classical Q-learning
+│   │   2._Classical_DQL.py             # classical Deep Q-learning
+│   │   3._Classical_DQL_sim_quant.py   # classical Deep Q-learning simulating quantum circuit
+│   │
+│   ├───...                             # quantum model...
+│   └───...                             # quantum model... 
+└───tutorials                           # supplementary tutorials to start with
+
+```
+
 
 ## Introduction
 
@@ -15,6 +43,13 @@ Q-learning is a machine learning algorithm of the "Reinforcement Learning" type.
 Further reading: https://en.wikipedia.org/wiki/Reinforcement_learning
 
 ### Classical Q-Learning
+
+<br/>
+
+>Run in [this script](./scripts/1._Classical_Q-learning.py) 
+🚀
+
+<br/>
 
 We will explain the concept of Q-learning on the example of an agent moving around the "FrozenLake" environment. Let's take a 4x4 element board:
 
@@ -57,7 +92,15 @@ Politics is a Q function that takes an action (e.g. move left) and a state (fiel
 Further reading: https://en.wikipedia.org/wiki/Q-learning
 
 
-### Deep Q-Learning
+
+### [Deep Q-Learning](/scripts/2._Classical_Deep_Q-learning.py)
+
+<br/>
+
+>Run in [this script](./scripts/2._Classical_Deep_Q-learning.py) 
+🚀
+
+<br/>
 
 However, in our case, we use the so-called Deep Q-Learning (DQL). To make decisions, we use a neural network with a 16-element input (number of fields on the board) and a 4-element output, corresponding to the weights provided for each movement:
 
