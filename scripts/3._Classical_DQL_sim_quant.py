@@ -10,9 +10,10 @@ from torchsummary import summary
 import matplotlib.pyplot as plt
 import numpy as np 
 import pandas as pd
-
 from tqdm import tqdm
+
 from src.entropies import entanglement_entropy, classical_entropy
+from src.visualizations import *
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
@@ -225,84 +226,19 @@ fl = Trainer()
 print("Train through {epochs} epochs". format(epochs=epochs))
 fl.train(epochs)
 
-
-plt.plot(fl.jList, label="Steps in epoch")
-plt.plot(fl.success, label="If success")
-plt.legend()
-plt.title("Steps from epochs with success indicator")
-plt.show()
-
+plot_success_steps_history(fl.jList, fl.success)
 
 strategy = np.array(fl.Qstrategy()).reshape((4,4))
-#just for the plot purposes
-strategy_angles = ((2-strategy)%4)*90
-fig, axs = plt.subplots(1, 1, figsize=(3.5, 3.5), sharex=True, sharey=True,tight_layout=True)
-axs.set_aspect(1)
-x,y = np.meshgrid(np.linspace(0,3,4), np.linspace(3,0,4))
-axs.quiver(x, y, np.ones((x.shape))*1.5,np.ones((x.shape))*1.5,angles=np.flip(strategy_angles, axis=0), pivot='middle', units='xy')
-axs.scatter( [0], [0], c="cornflowerblue", s=150, alpha=0.6, label="start")
-axs.scatter( fl.holes_indexes%4, fl.holes_indexes//4, c="firebrick", s=150, alpha=0.6, label="hole")
-axs.scatter( [3], [3], c="mediumseagreen", s=150, alpha=0.6, label="goal")
-major_ticks = np.arange(0, 4, 1)
-axs.set_xticks(major_ticks)
-axs.set_yticks(major_ticks)
-axs.set_title("Move strategy from Qtable")
-axs.grid(which="major", alpha=0.4)
-axs.legend()
-plt.savefig("../results/classical_DQL_sim_quantum/trained_strategy.jpg", dpi=900)
-plt.show()
-
+strategy_save_path = "../results/classical_DQL_sim_quantum/trained_strategy.jpg"
+plot_strategy(strategy, fl.holes_indexes, strategy_save_path)
 
 entropies = np.array(fl.entropies)
 cl_entropies = np.array(fl.cl_entropies)
+entropies_save_path = "../results/classical_DQL_sim_quantum/entropies.jpg"
+plot_entropies(entropies, cl_entropies, entropies_save_path)
 
-fig, ax = plt.subplots()
-ax.plot(entropies, label="entglmt_entr Lax")
-ax.plot(cl_entropies, color='red', label="cl_entropy Rax", alpha=0.4)
-ax.legend()
-plt.savefig("../results/classical_DQL_sim_quantum/entropies.jpg", dpi=900)
-plt.show()
-
-plt.figure(figsize=[9,16])
-plt.subplot(411)
-plt.plot(pd.Series(fl.jList).rolling(window).mean())
-plt.title('Step Moving Average ({}-episode window)'.format(window))
-plt.ylabel('Moves')
-plt.xlabel('Episode')
-plt.axhline(y=min_steps_num, color='g', linestyle='-', label=f'Optimal number of steps: {min_steps_num}')
-plt.ylim(bottom=0)
-plt.legend()
-plt.grid()
-
-plt.subplot(412)
-plt.plot(pd.Series(fl.reward_list).rolling(window).mean())
-plt.title('Reward Moving Average ({}-episode window)'.format(window))
-plt.ylabel('Reward')
-plt.xlabel('Episode')
-plt.ylim(-1.1, 1.1)
-plt.grid()
-
-plt.subplot(413)
-plt.plot(pd.Series(fl.success).rolling(window).mean())
-plt.title('Wins Moving Average ({}-episode window)'.format(window))
-plt.ylabel('If won')
-plt.axhline(y=target_win_ratio, color='r', linestyle='-', label=f'Early stop condition: {target_win_ratio*100:.2f}%')
-plt.legend()
-plt.xlabel('Episode')
-plt.ylim(-0.1, 1.1)
-plt.grid()
-
-plt.subplot(414)
-plt.plot(np.array(fl.epsilon_list))
-plt.title('Random Action Parameter')
-plt.ylabel('Chance Random Action')
-plt.xlabel('Episode')
-plt.ylim(-0.1, 1.1)
-plt.grid()
-
-plt.tight_layout(pad=2)
-plt.savefig("../results/classical_DQL_sim_quantum/training_history.jpg", dpi=900)
-plt.show()
+history_save_path = "../results/classical_DQL_sim_quantum/training_history.jpg"
+plot_rolling_window_history(fl.jList, fl.reward_list, fl.success, fl.epsilon_list, target_win_ratio, min_steps_num, history_save_path, window=window)
 
 
 with open("../results/classical_DQL_sim_quantum/hyperparameters.txt", "w+") as f:
