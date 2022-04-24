@@ -40,14 +40,15 @@ steps_total = []
 rewards_total = []
 win_history = []
 random_params = []
+epoch_random_chance = random_chance
 for i_episode in tqdm(range(epochs)):    
     state = env.reset()
     reward_all = 0
-    random_chance*=random_scaling
+    epoch_random_chance*=random_scaling
 
     for step in range(max_steps):
         # action
-        if torch.rand(1) < random_chance:
+        if torch.rand(1) < epoch_random_chance:
             Q_state = torch.rand(number_of_actions)
         else:
             Q_state = Q[state]
@@ -72,7 +73,7 @@ for i_episode in tqdm(range(epochs)):
             steps_total.append(step+1)
             rewards_total.append(reward_all)
             win_history.append(1 if reward==1. else 0)
-            random_params.append(random_chance)
+            random_params.append(epoch_random_chance)
             break
 
     if sum(win_history[-window:])/window>=target_win_ratio:

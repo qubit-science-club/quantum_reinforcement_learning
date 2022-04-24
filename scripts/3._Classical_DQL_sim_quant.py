@@ -260,7 +260,7 @@ fig, ax = plt.subplots()
 ax.plot(entropies, label="entglmt_entr Lax")
 ax.plot(cl_entropies, color='red', label="cl_entropy Rax", alpha=0.4)
 ax.legend()
-plt.savefig("../results/classical_DQL_sim_quantum/entanglement.jpg", dpi=900)
+plt.savefig("../results/classical_DQL_sim_quantum/entropies.jpg", dpi=900)
 plt.show()
 
 plt.figure(figsize=[9,16])
