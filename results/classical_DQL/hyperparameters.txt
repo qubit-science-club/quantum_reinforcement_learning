@@ -1,9 +1,9 @@
 gamma;0.8
-epochs;250
+epochs;500
 max_steps;60
 learning_rate;0.002
 random_chance;0.99
-random_scaling;0.98
+random_scaling;0.99
 window;40
 target_win_ratio;0.98
 min_steps_num;6

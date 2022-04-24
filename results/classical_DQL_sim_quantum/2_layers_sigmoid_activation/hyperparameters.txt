@@ -1,0 +1,11 @@
+gamma;0.8
+epochs;2000
+max_steps;60
+learning_rate;0.001
+random_chance;0.99
+random_scaling;0.9985
+window;40
+target_win_ratio;0.98
+min_steps_num;6
+n_hidden_layers;2
+activation_function;sigmoid

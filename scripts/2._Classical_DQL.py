@@ -14,11 +14,11 @@ from src.visualizations import *
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 gamma = 0.8
-epochs = 250
+epochs = 500
 max_steps = 60
 learning_rate = 0.002
 random_chance = 0.99
-random_scaling = 0.98
+random_scaling = 0.99
 window = 40
 target_win_ratio = 0.98
 min_steps_num = 6
@@ -122,7 +122,8 @@ class Trainer:
         return [torch.argmax(self.agent(i)).item() for i in range(self.location_space_size)]
         
     def train(self, epochs):
-        for x in tqdm(range(epochs)):
+        for x in (pbar := tqdm(range(epochs))):
+            pbar.set_description(f'Success rate: {sum(self.success[-window:])/window:.2%} | Random chance: {self.epsilon:.2%}')
             j=0
             self.location = 0
             while j<max_steps:

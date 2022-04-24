@@ -80,5 +80,5 @@ def plot_rolling_window_history(steps_list, reward_list, success_list, epsilon_l
     plt.grid()
 
     plt.tight_layout(pad=2)
-    plt.savefig(save_path, dpi=900)
+    plt.savefig(save_path, dpi=450)
     plt.show()
