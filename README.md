@@ -46,7 +46,7 @@ Further reading: https://en.wikipedia.org/wiki/Reinforcement_learning
 
 <br/>
 
->Run in [this script](./scripts/1._Classical_Q-learning.py) 
+>Run in [this script](./scripts/1._Classical_QL.py) 
 🚀
 
 <br/>
@@ -93,11 +93,10 @@ Further reading: https://en.wikipedia.org/wiki/Q-learning
 
 
 
-### [Deep Q-Learning](/scripts/2._Classical_Deep_Q-learning.py)
-
+### Deep Q-Learning
 <br/>
 
->Run in [this script](./scripts/2._Classical_Deep_Q-learning.py) 
+>Run in [this script](./scripts/2._Classical_DQL.py) 
 🚀
 
 <br/>
@@ -173,6 +172,12 @@ Let's see how the trained agent works:
 
 
 ## Variational Quantum Circuit
+<br/>
+
+>Run from [this folder](./scripts/RUN_QML/) 
+🚀
+
+<br/>
 
 In the quantum approach we are replacing the neural network with the so-called Variational Quantum Circuit (VQC). This is a type of quantum circuit with manipulable (classical) parameters. Like neural networks, VQCs can approximate arbitrary functions or classifiers. The following implementation is taken from
 
@@ -220,6 +225,13 @@ At the very end we are conducting a measurement of each qubit and basing on the 
 Because the training proces of VQC is very unstable we are (similarly as in the case of classical approach) using early stopping. We are terminating the procedure if during the last 20 epochs the reward didn't change and was positive.
 
 ## Extended classical model
+<br/>
+
+>Run in [this script](./scripts/3._Classical_DQL_sim_quant.py) 
+🚀
+
+<br/>
+
 
 It's important to note, that the state vector given by the VQC consists of ![equation](https://latex.codecogs.com/svg.image?2^n) complex variables, where *n* is the number of qubits, which in our case gives 16 numbers. To resemble this situation as close as possible we are extending the classical model by increasing the number of neurons in each layer (also the output one) to 32. We are using 32 real numbers to encode 16 complex ones.
 
