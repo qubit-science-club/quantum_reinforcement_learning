@@ -1,12 +1,13 @@
 import gym
 from gym.envs import toy_text
+import sys
 
 class ShortestPathFrozenLake(toy_text.frozen_lake.FrozenLakeEnv):
 	def __init__(self, **kwargs):
 		super(ShortestPathFrozenLake, self).__init__(**kwargs)
 
-		for state in range(self.nS): # for all states
-			for action in range(self.nA): # for all actions
+		for state in range(self.observation_space.start, self.observation_space.n): # for all states
+			for action in range(self.action_space.start, self.action_space.n): # for all actions
 				my_transitions = []
 				for (prob, next_state, _, is_terminal) in self.P[state][action]:
 					row = next_state // self.ncol

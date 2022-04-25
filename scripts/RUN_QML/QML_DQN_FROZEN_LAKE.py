@@ -34,19 +34,7 @@ from copy import deepcopy
 
 from scipy.linalg import logm
 
-from gym.envs.registration import register
-
-register(
-    id="Deterministic-ShortestPath-4x4-FrozenLake-v0",  # name given to this new environment
-    entry_point="ShortestPathFrozenLake:ShortestPathFrozenLake",  # env entry point
-    kwargs={"map_name": "4x4", "is_slippery": False},  # argument passed to the env
-)
-# register(
-#     id='Deterministic-4x4-FrozenLake-v0', # name given to this new environment
-#     entry_point='gym.envs.toy_text.frozen_lake:FrozenLakeEnv', # env entry point
-#     kwargs={'map_name': '4x4', 'is_slippery': False} # argument passed to the env
-# )
-
+from ShortestPathFrozenLake import ShortestPathFrozenLake
 
 # ENTANGLEMENT ENTROPY
 def entanglement_entropy(state):
@@ -438,9 +426,7 @@ def deep_Q_Learning(
     @param n_tests number of test episodes
     """
 
-    # env = gym.make("Deterministic-ShortestPath-4x4-FrozenLake-v0")
-    # env = gym.make('Deterministic-4x4-FrozenLake-v0')
-    env = gym.make("FrozenLake-v1", is_slippery=False)
+    env = ShortestPathFrozenLake(is_slippery=False)
 
     n_states, n_actions = env.observation_space.n, env.action_space.n
     print("NUMBER OF STATES:" + str(n_states))
@@ -850,4 +836,3 @@ if __name__ == "__main__":
 
     if evaluate:
         run(n_tests)
-
