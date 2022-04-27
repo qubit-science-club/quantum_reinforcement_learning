@@ -16,13 +16,11 @@ Code was developed and run on `Python` version `3.9.11`. All main requirements a
 │
 ├───scripts                             # scripts for generating results
 │   ├───src                             # source code directory
-│   │
+│   ├───QML                             # quantum model directory
 │   │   1._Classical_QL.py              # classical Q-learning
 │   │   2._Classical_DQL.py             # classical Deep Q-learning
 │   │   3._Classical_DQL_sim_quant.py   # classical Deep Q-learning simulating quantum circuit
-│   │
-│   ├───...                             # quantum model...
-│   └───...                             # quantum model... 
+│   
 └───tutorials                           # supplementary tutorials to start with
 
 ```
