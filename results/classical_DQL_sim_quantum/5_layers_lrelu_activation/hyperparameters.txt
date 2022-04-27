@@ -1,0 +1,12 @@
+gamma;0.9
+epochs;20000
+max_steps;60
+learning_rate;0.0002
+non_random_chance;0.99
+random_scaling;0.9998
+window;40
+target_win_ratio;0.98
+min_steps_num;6
+n_hidden_layers;5
+activation_function;lrelu
+global_seed;123456

@@ -1,12 +1,12 @@
 from itertools import product
 
-activations = ['sigmoid', 'relu', 'tanh']
-n_layers = list(range(1,4))
-global_seed = 202020
+activations = ['lrelu', 'sigmoid', 'tanh']
+n_layers = list(range(1,7))
+global_seed = 123456
 
 
 
-for i, (activation_function, n_hidden_layers) in enumerate(product(activations[:1], n_layers[:1])):
+for i, (activation_function, n_hidden_layers) in enumerate(product(activations, n_layers)):
     print(f'Experiment: {i+1}/{len(activations)*len(n_layers)}')
     print("Activation function: ", activation_function)
     print("Number of hidden layers: ", n_hidden_layers)
@@ -36,11 +36,11 @@ for i, (activation_function, n_hidden_layers) in enumerate(product(activations[:
 
 
     gamma = 0.9
-    epochs = 10000
+    epochs = 20000
     max_steps = 60
-    learning_rate = 0.0001
+    learning_rate = 0.0002
     non_random_chance = 0.99
-    random_scaling = 0.9995
+    random_scaling = 0.9998
     window = 40
     target_win_ratio = 0.98
     min_steps_num = 6
@@ -92,12 +92,12 @@ for i, (activation_function, n_hidden_layers) in enumerate(product(activations[:
             ]
             self.l2 = nn.Linear(in_features=self.hidden_size, out_features=32) 
             self.activation = None
-            if activation_function=='relu':
-                self.activation = torch.relu
+            if activation_function=='lrelu':
+                self.activation = F.leaky_relu
             if activation_function=='sigmoid':
-                self.activation = torch.sigmoid
+                self.activation = F.sigmoid
             if activation_function=='tanh':
-                self.activation = torch.tanh
+                self.activation = F.tanh
 
             uniform_linear_layer(self.l1)
             for l in self.hidden_layers:
@@ -154,7 +154,7 @@ for i, (activation_function, n_hidden_layers) in enumerate(product(activations[:
         def train(self, epoch):
             # entropies_episodes = [0] * (epoch+1)
             for i in (pbar := tqdm(range(epoch))):
-                pbar.set_description(f'Success rate: {sum(self.success[-window:])/window:.2%} | Random chance: {1-self.epsilon:.2%}')
+                pbar.set_description(f'Success rate: {sum(self.success[-window:])/window:.2%} | Random chance: {self.epsilon:.2%}')
                 
                 s = lake.reset() #stan na jeziorze 0-16, dla resetu 0
                 j = 0
@@ -285,7 +285,7 @@ for i, (activation_function, n_hidden_layers) in enumerate(product(activations[:
     plot_entropies(entropies, cl_entropies, entropies_save_path)
 
     history_save_path = os.path.join(results_path, "training_history.jpg")
-    plot_rolling_window_history(fl.jList, fl.reward_list, fl.success, 1-np.array(fl.epsilon_list), target_win_ratio, min_steps_num, history_save_path, window=window)
+    plot_rolling_window_history(fl.jList, fl.reward_list, fl.success, np.array(fl.epsilon_list), target_win_ratio, min_steps_num, history_save_path, window=window)
 
 
     with open(os.path.join(results_path, "hyperparameters.txt"), "w+") as f:
@@ -300,7 +300,7 @@ for i, (activation_function, n_hidden_layers) in enumerate(product(activations[:
         f.write(f'min_steps_num;{min_steps_num}\n')
         f.write(f'n_hidden_layers;{n_hidden_layers}\n')
         f.write(f'activation_function;{activation_function}\n')
-
+        f.write(f'global_seed;{global_seed}\n')
 
     with open(os.path.join(results_path, "entropies.txt"), "w") as f:
         for ent in fl.entropies:
