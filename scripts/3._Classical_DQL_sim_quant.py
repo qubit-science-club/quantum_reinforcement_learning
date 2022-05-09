@@ -19,7 +19,6 @@ for i, (activation_function, n_hidden_layers) in enumerate(product(activations, 
     from torch.nn import functional as F
     from torch import linalg as LA
 
-    from torchsummary import summary
     import matplotlib.pyplot as plt
     import numpy as np 
     import pandas as pd
@@ -267,8 +266,6 @@ for i, (activation_function, n_hidden_layers) in enumerate(product(activations, 
 
     t = torch.Tensor(np.array([32], dtype=int))
     t = t.to(torch.int32)
-
-    #summary(fl.agent, t)
 
     print("Train through {epochs} epochs". format(epochs=epochs))
     fl.train(epochs)
