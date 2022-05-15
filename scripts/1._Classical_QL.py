@@ -2,11 +2,10 @@ import gym
 from gym.envs.registration import register
 import torch
 
-import matplotlib.pyplot as plt
 from tqdm import tqdm
-import pandas as pd
 import numpy as np
 from src.visualizations import *
+import os
 
 # Parameters
 gamma = 0.05
@@ -18,6 +17,10 @@ random_scaling = 0.95
 window = 40
 target_win_ratio = 0.98
 min_steps_num = 6
+global_seed = 42
+
+np.random.seed(global_seed)
+torch.manual_seed(global_seed)
 
 # register(
 #     id='FrozenLake-v1',
@@ -80,18 +83,22 @@ for i_episode in tqdm(range(epochs)):
     if sum(win_history[-window:])/window>=target_win_ratio:
         break
      
+results_path = "../results/classical_QL"
 
 strategy = np.array([torch.argmax(Q_state).item() for Q_state in Q]).reshape((4,4))
 holes_indexes = np.array([5,7,11,12])
-strategy_save_path = "../results/classical_QL/trained_strategy.jpg"
+strategy_save_path = os.path.join(results_path, "trained_strategy.jpg")
 
 plot_strategy(strategy, holes_indexes, strategy_save_path)
 
-history_save_path = "../results/classical_QL/training_history.jpg"
-plot_rolling_window_history(steps_total, rewards_total, win_history, random_params, target_win_ratio, min_steps_num, history_save_path, window=window)
+
+moving_average_history_save_path = os.path.join(results_path, "training_history_moving_average.jpg")
+plot_rolling_window_history(steps_total, rewards_total, win_history, random_params, target_win_ratio, min_steps_num, moving_average_history_save_path, window=window)
+history_save_path = os.path.join(results_path, "training_history.jpg")
+plot_history(steps_total, rewards_total, win_history, random_params, target_win_ratio, min_steps_num, history_save_path)
 
 
-with open("../results/classical_QL/hyperparameters.txt", "w+") as f:
+with open(os.path.join(results_path, "hyperparameters.txt"), "w+") as f:
     f.write(f'gamma;{gamma}\n')
     f.write(f'epochs;{epochs}\n')
     f.write(f'max_steps;{max_steps}\n')

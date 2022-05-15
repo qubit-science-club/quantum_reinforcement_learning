@@ -20,6 +20,8 @@ Code was developed and run on `Python` version `3.9.11`. All main requirements a
 │   │   1._Classical_QL.py              # classical Q-learning
 │   │   2._Classical_DQL.py             # classical Deep Q-learning
 │   │   3._Classical_DQL_sim_quant.py   # classical Deep Q-learning simulating quantum circuit
+│   │   3b._Classical_DQL_sim_quant_grid_search.py   # script no. 3 for grid search finetuning
+│   │   3c._Classical_DQL_sim_quant_finetuning.ipynb # script no. 3 with automatic hyperparameter finetuning
 │   
 └───tutorials                           # supplementary tutorials to start with
 
@@ -239,6 +241,86 @@ It should be noted, that unfortunately due to this extension the agent's trainin
 ## Results
 
 
+### Classical Q-learnig:
 
+Classical Q-learning model learns for wide range of parameters and has very predictible behaviour: 
+* 1. agent wanders untils spot reward 
+* 2. then stays on that path usually optimizing path to the shortest one in few epochs
+The only fun is to set hyperparamers to converge as fast as possible. 
 
+![image](./assets/QL_results.jpg)
 
+We didn't calculate here entanglement entropies. This one is just complementary proof of concept.
+
+### Deep Q-learning:
+
+Learns slower than non-deep version and is slightly more sensitive to hyperparameters. Almost always converge to optimal number of steps but sometimes vary a lot along the way:
+
+![image](./assets/DQL_results.jpg)
+
+Here we've calculated entropy after every step (in contrary to every epoch for other values):
+
+![image](./results/classical_DQL/entropies.jpg)
+
+It's behaviour is very random, but in the end Shannon entropy stops around `0` and entanglement entropy reach almost `2`. It only occurs, when the model train good path (converge to winning strategy).
+
+### Deep Q-learning simulating quantum circuit (Extended classical model):
+
+Here was a lot of trouble to train the model. We were seeking architecture and hyperparameters in 3 stages:
+
+### **Finetuning stages:**
+-----
+
+#### **1. Manual finetuning on baseline model:**
+
+* *Model*: one/two hidden layer and sigmoid activation function
+* *Goal*: We perform a few experiments to gain a sense how and which hyperparamers influence our model training. Also we had baseline ranges to start more systematic searching
+* *Results*: It turns out the model is very hard to train, in fact only for some very narrow ranges we obtained ~40% win ratio in last few epoch means. It occur rarely, only for some seeds. 
+
+User can run our [script](./scripts/3._Classical_DQL_sim_quant.py), all paramers there are the results of this finetuning. 
+
+#### **2. Grid search for the best architecture:**
+
+* *Model*: 
+    * **hidden layers**: from 1 to 6 incl.
+    * **Activation functions**: sigmoid, hyperbolic tangent and leaky relu with slope 0.1
+* *Goal*: Here we put training with slightly lower hyperparameters, which gaves training 'pace' (learning rate, random paramer scaling etc.) and run every combination of tested architectures for `20'000` epochs to choose best architecture to hyperparameter finetuning.
+* *Results*: 
+    * None of the models trained to win. 
+    * Most promising results shown leaky relu, but we quit it in next stage since it 'favors' positive values.
+    * Tangent performs the worst.
+    * Model starts to train for 1 and 2 hidden layers, for 3 and above hidden layers the architecture seems to complicated.
+
+All the results are in [results directory](./results/classical_DQL_sim_quantum/). Script used for training is [here](./scripts/3b._Classical_DQL_sim_quant_grid_search.py).
+
+#### **3. Automatic hyperparamers finetuning :**
+
+For this stage we user `pyTorch` [finetuning tutorial](https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html) with `ray`.
+
+* *Model*: 
+    * **hidden layers**: from 1 to 2 incl.
+    * **Activation functions**: sigmoid
+* *Goal*: Final, automatic, full scale finetuning. 
+* *Results*: 
+    * ... (in progress) ...
+
+Notebook used for training is [here](./scripts/3c._Classical_DQL_sim_quant_finetuning.ipynb). Finetuning was performed on Google Collab on P100 GPU with 20 parallel experiments.
+
+### Final results:
+
+For best model which almost trained, we can see convergence of (both) entropies to zero, right in epochs, where model started to reach goal:
+
+![image](./assets/DQL_sim_quant_results.jpg)
+![image](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation/entropies.jpg)
+
+All parameters are in [results folder](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation/). 
+
+However this method is incomparably harder to obtain effective model for environment. Not only in terms of hyperparameters sensitivity, but also from training duration and only small amount of 'succesful' experiments i.e. model which has mean win ratio ~40%. Also to obtain 'succesful' model we need to stop in right place i.e. for smaller win ratio early stop condition, which does not guarantee optimal path.
+
+Interesting is, that models with 'real' quantum circuits (not simulated by neural network) were able to train, even if rarely. 
+This shows that simulating quantum distributions for classical nerual networks can be tough. In our case particularly with:
+* classical data encoded with basis embedding 
+* classical data decoded with expectation values from Pauli Z operator (with flipped sign)
+
+Similar conclusions, that quantum disribution can be hard to simulate, can be found in literature e.g. *Learning hard quantum distributions with variational
+autoencoders* [Rochetto et, al. 2018](https://www.nature.com/articles/s41534-018-0077-z.pdf).

@@ -22,7 +22,10 @@ random_scaling = 0.99
 window = 40
 target_win_ratio = 0.98
 min_steps_num = 6
+global_seed = 42
 
+np.random.seed(global_seed)
+torch.manual_seed(global_seed)
 
 class Agent(torch.nn.Module):
     def __init__(self, location_space_size, action_space_size, hidden_layer_size):
@@ -176,20 +179,25 @@ if __name__ == "__main__":
     
     plot_success_steps_history(fl.jInEpoch, fl.success)
 
+    results_path = "../results/classical_DQL"
+
     strategy = np.array(fl.Qstrategy()).reshape((4,4))
-    strategy_save_path = "../results/classical_DQL/trained_strategy.jpg"
+    strategy_save_path = os.path.join(results_path, "trained_strategy.jpg")
     strategy_angles = ((strategy+3)%4)*90
     plot_strategy(strategy, fl.holes_indexes, strategy_save_path, custom_angles=strategy_angles)
     
     entropies = np.array(fl.entropies)
     cl_entropies = np.array(fl.cl_entropies)
-    entropies_save_path = "../results/classical_DQL/entropies.jpg"
+    entropies_save_path = os.path.join(results_path, "entropies.jpg")
     plot_entropies(entropies, cl_entropies, entropies_save_path)
 
-    history_save_path = "../results/classical_DQL/training_history.jpg"
-    plot_rolling_window_history(fl.jInEpoch, fl.reward_list, fl.success, fl.epsilon_list, target_win_ratio, min_steps_num, history_save_path, window=window)
+    moving_average_history_save_path = os.path.join(results_path, "training_history_moving_average.jpg")
+    plot_rolling_window_history(fl.jInEpoch, fl.reward_list, fl.success, fl.epsilon_list, target_win_ratio, min_steps_num, moving_average_history_save_path, window=window)
+    history_save_path = os.path.join(results_path, "training_history.jpg")
+    plot_history(fl.jInEpoch, fl.reward_list, fl.success, fl.epsilon_list, target_win_ratio, min_steps_num, history_save_path)
 
-    with open("../results/classical_DQL/hyperparameters.txt", "w+") as f:
+
+    with open(os.path.join(results_path, "hyperparameters.txt"), "w+") as f:
         f.write(f'gamma;{gamma}\n')
         f.write(f'epochs;{epochs}\n')
         f.write(f'max_steps;{max_steps}\n')
@@ -200,10 +208,10 @@ if __name__ == "__main__":
         f.write(f'target_win_ratio;{target_win_ratio}\n')
         f.write(f'min_steps_num;{min_steps_num}\n')
 
-    with open("../results/classical_DQL/entropies.txt", "w") as f:
+    with open(os.path.join(results_path, "entropies.txt"), "w") as f:
         for ent in fl.entropies:
             f.write(str(ent)+";")
             
-    with open("../results/classical_DQL/cl_entropies.txt", "w") as f:
+    with open(os.path.join(results_path, "cl_entropies.txt"), "w") as f:
         for ent in fl.cl_entropies:
             f.write(str(ent)+";")
