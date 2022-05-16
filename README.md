@@ -239,7 +239,7 @@ It should be noted, that unfortunately due to this extension the agent's trainin
 
 
 ## Results
-### Quantum DQ-learning
+### Quantum DQN
 
  With earlystopping | WithOUT earlystopping 
  :---: | :---: 
