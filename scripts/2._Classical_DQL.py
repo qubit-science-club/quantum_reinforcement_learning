@@ -9,19 +9,23 @@ import os
 from tqdm import tqdm
 
 from src.entropies import entanglement_entropy, classical_entropy
+from src.visualizations import *
 
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 gamma = 0.8
-epochs = 250
+epochs = 500
 max_steps = 60
 learning_rate = 0.002
 random_chance = 0.99
-random_scaling = 0.98
+random_scaling = 0.99
 window = 40
 target_win_ratio = 0.98
 min_steps_num = 6
+global_seed = 42
 
+np.random.seed(global_seed)
+torch.manual_seed(global_seed)
 
 class Agent(torch.nn.Module):
     def __init__(self, location_space_size, action_space_size, hidden_layer_size):
@@ -121,7 +125,8 @@ class Trainer:
         return [torch.argmax(self.agent(i)).item() for i in range(self.location_space_size)]
         
     def train(self, epochs):
-        for x in tqdm(range(epochs)):
+        for x in (pbar := tqdm(range(epochs))):
+            pbar.set_description(f'Success rate: {sum(self.success[-window:])/window:.2%} | Random chance: {self.epsilon:.2%}')
             j=0
             self.location = 0
             while j<max_steps:
@@ -164,7 +169,6 @@ class Trainer:
                 
     
 if __name__ == "__main__":
-
     fl = Trainer()
     print("Setting deep Q-learning in FrozenLake environment",\
           "\nFrozenlake:")
@@ -173,84 +177,27 @@ if __name__ == "__main__":
     print("Train through {epochs} epochs". format(epochs=epochs))
     fl.train(epochs)
     
-    plt.plot(fl.jInEpoch, label="Steps in epoch")
-    plt.plot(fl.success, label="If success")
-    plt.legend()
-    plt.title("Steps from epochs with success indicator")
-    plt.show()
-    
+    plot_success_steps_history(fl.jInEpoch, fl.success)
+
+    results_path = "../results/classical_DQL"
+
     strategy = np.array(fl.Qstrategy()).reshape((4,4))
-    
-    #just for the plot purposes
+    strategy_save_path = os.path.join(results_path, "trained_strategy.jpg")
     strategy_angles = ((strategy+3)%4)*90
-    fig, axs = plt.subplots(1, 1, figsize=(3.5, 3.5), sharex=True, sharey=True,tight_layout=True)
-    axs.set_aspect(1)
-    x,y = np.meshgrid(np.linspace(0,3,4), np.linspace(3,0,4))
-    axs.quiver(x, y, np.ones((x.shape))*1.5,np.ones((x.shape))*1.5,angles=np.flip(strategy_angles, axis=0), pivot='middle', units='xy')
-    axs.scatter( [0], [0], c="cornflowerblue", s=150, alpha=0.6, label="start")
-    axs.scatter( fl.holes_indexes%4, fl.holes_indexes//4, c="firebrick", s=150, alpha=0.6, label="hole")
-    axs.scatter( [3], [3], c="mediumseagreen", s=150, alpha=0.6, label="goal")
-    major_ticks = np.arange(0, 4, 1)
-    axs.set_xticks(major_ticks)
-    axs.set_yticks(major_ticks)
-    axs.set_title("Move strategy from Qtable")
-    axs.grid(which="major", alpha=0.4)
-    axs.legend()
-    plt.savefig("../results/classical_DQL/trained_strategy.jpg", dpi=900)
-    plt.show()
+    plot_strategy(strategy, fl.holes_indexes, strategy_save_path, custom_angles=strategy_angles)
     
     entropies = np.array(fl.entropies)
     cl_entropies = np.array(fl.cl_entropies)
-    
-    fig, ax = plt.subplots()
-    ax.plot(entropies, label="entglmt_entr Lax")
-    ax.plot(cl_entropies, color='red', label="cl_entropy Rax", alpha=0.4)
-    ax.legend()
-    plt.savefig("../results/classical_DQL/entanglement.jpg", dpi=900)
-    plt.show()
+    entropies_save_path = os.path.join(results_path, "entropies.jpg")
+    plot_entropies(entropies, cl_entropies, entropies_save_path)
 
-    plt.figure(figsize=[9,16])
-    plt.subplot(411)
-    plt.plot(pd.Series(fl.jInEpoch).rolling(window).mean())
-    plt.title('Step Moving Average ({}-episode window)'.format(window))
-    plt.ylabel('Moves')
-    plt.xlabel('Episode')
-    plt.axhline(y=min_steps_num, color='g', linestyle='-', label=f'Optimal number of steps: {min_steps_num}')
-    plt.ylim(bottom=0)
-    plt.legend()
-    plt.grid()
+    moving_average_history_save_path = os.path.join(results_path, "training_history_moving_average.jpg")
+    plot_rolling_window_history(fl.jInEpoch, fl.reward_list, fl.success, fl.epsilon_list, target_win_ratio, min_steps_num, moving_average_history_save_path, window=window)
+    history_save_path = os.path.join(results_path, "training_history.jpg")
+    plot_history(fl.jInEpoch, fl.reward_list, fl.success, fl.epsilon_list, target_win_ratio, min_steps_num, history_save_path)
 
-    plt.subplot(412)
-    plt.plot(pd.Series(fl.reward_list).rolling(window).mean())
-    plt.title('Reward Moving Average ({}-episode window)'.format(window))
-    plt.ylabel('Reward')
-    plt.xlabel('Episode')
-    plt.ylim(-1.1, 1.1)
-    plt.grid()
 
-    plt.subplot(413)
-    plt.plot(pd.Series(fl.success).rolling(window).mean())
-    plt.title('Wins Moving Average ({}-episode window)'.format(window))
-    plt.ylabel('If won')
-    plt.axhline(y=target_win_ratio, color='r', linestyle='-', label=f'Early stop condition: {target_win_ratio*100:.2f}%')
-    plt.legend()
-    plt.xlabel('Episode')
-    plt.ylim(-0.1, 1.1)
-    plt.grid()
-
-    plt.subplot(414)
-    plt.plot(np.array(fl.epsilon_list))
-    plt.title('Random Action Parameter')
-    plt.ylabel('Chance Random Action')
-    plt.xlabel('Episode')
-    plt.ylim(-0.1, 1.1)
-    plt.grid()
-
-    plt.tight_layout(pad=2)
-    plt.savefig("../results/classical_DQL/training_history.jpg", dpi=900)
-    plt.show()
-
-    with open("../results/classical_DQL/hyperparameters.txt", "w+") as f:
+    with open(os.path.join(results_path, "hyperparameters.txt"), "w+") as f:
         f.write(f'gamma;{gamma}\n')
         f.write(f'epochs;{epochs}\n')
         f.write(f'max_steps;{max_steps}\n')
@@ -261,10 +208,10 @@ if __name__ == "__main__":
         f.write(f'target_win_ratio;{target_win_ratio}\n')
         f.write(f'min_steps_num;{min_steps_num}\n')
 
-    with open("../results/classical_DQL/entropies.txt", "w") as f:
+    with open(os.path.join(results_path, "entropies.txt"), "w") as f:
         for ent in fl.entropies:
             f.write(str(ent)+";")
             
-    with open("../results/classical_DQL/cl_entropies.txt", "w") as f:
+    with open(os.path.join(results_path, "cl_entropies.txt"), "w") as f:
         for ent in fl.cl_entropies:
             f.write(str(ent)+";")

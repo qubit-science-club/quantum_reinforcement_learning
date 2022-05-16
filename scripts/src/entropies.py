@@ -20,7 +20,7 @@ def entanglement_entropy(state):
             ai = np.array(Ia[i], ndmin=2).T
             Tr_a[i] = np.kron(ai.conj().T, Ib).dot(rho_final).dot(np.kron(ai,Ib))
         rho_b = Tr_a.sum(axis=0)
-        rho_b_l2 = logm(rho_b)/np.log(2.0)
+        rho_b_l2 = logm(rho_b+0.000001)/np.log(2.0)
         S_rho_b = - rho_b.dot(rho_b_l2).trace()
         S.append(S_rho_b)
     return np.array(S).mean()

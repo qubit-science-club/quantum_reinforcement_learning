@@ -2,10 +2,10 @@ import gym
 from gym.envs.registration import register
 import torch
 
-import matplotlib.pyplot as plt
 from tqdm import tqdm
-import pandas as pd
 import numpy as np
+from src.visualizations import *
+import os
 
 # Parameters
 gamma = 0.05
@@ -17,6 +17,10 @@ random_scaling = 0.95
 window = 40
 target_win_ratio = 0.98
 min_steps_num = 6
+global_seed = 42
+
+np.random.seed(global_seed)
+torch.manual_seed(global_seed)
 
 # register(
 #     id='FrozenLake-v1',
@@ -40,14 +44,15 @@ steps_total = []
 rewards_total = []
 win_history = []
 random_params = []
+epoch_random_chance = random_chance
 for i_episode in tqdm(range(epochs)):    
     state = env.reset()
     reward_all = 0
-    random_chance*=random_scaling
+    epoch_random_chance*=random_scaling
 
     for step in range(max_steps):
         # action
-        if torch.rand(1) < random_chance:
+        if torch.rand(1) < epoch_random_chance:
             Q_state = torch.rand(number_of_actions)
         else:
             Q_state = Q[state]
@@ -72,79 +77,28 @@ for i_episode in tqdm(range(epochs)):
             steps_total.append(step+1)
             rewards_total.append(reward_all)
             win_history.append(1 if reward==1. else 0)
-            random_params.append(random_chance)
+            random_params.append(epoch_random_chance)
             break
 
     if sum(win_history[-window:])/window>=target_win_ratio:
         break
      
+results_path = "../results/classical_QL"
 
 strategy = np.array([torch.argmax(Q_state).item() for Q_state in Q]).reshape((4,4))
 holes_indexes = np.array([5,7,11,12])
+strategy_save_path = os.path.join(results_path, "trained_strategy.jpg")
 
-#just for the plot purposes
-strategy_angles = ((2-strategy)%4)*90
-fig, axs = plt.subplots(1, 1, figsize=(3.5, 3.5), sharex=True, sharey=True,tight_layout=True)
-axs.set_aspect(1)
-x,y = np.meshgrid(np.linspace(0,3,4), np.linspace(3,0,4))
-axs.quiver(x, y, np.ones((x.shape))*1.5,np.ones((x.shape))*1.5,angles=np.flip(strategy_angles, axis=0), pivot='middle', units='xy')
-axs.scatter( [0], [0], c="cornflowerblue", s=150, alpha=0.6, label="start")
-axs.scatter( holes_indexes%4, holes_indexes//4, c="firebrick", s=150, alpha=0.6, label="hole")
-axs.scatter( [3], [3], c="mediumseagreen", s=150, alpha=0.6, label="goal")
-major_ticks = np.arange(0, 4, 1)
-axs.set_xticks(major_ticks)
-axs.set_yticks(major_ticks)
-axs.set_title("Move strategy from Qtable")
-axs.grid(which="major", alpha=0.4)
-axs.legend()
-plt.savefig("../results/classical_QL/trained_strategy.jpg", dpi=900)
-plt.show()
+plot_strategy(strategy, holes_indexes, strategy_save_path)
 
 
-plt.figure(figsize=[9,16])
-plt.subplot(411)
-plt.plot(pd.Series(steps_total).rolling(window).mean())
-plt.title('Step Moving Average ({}-episode window)'.format(window))
-plt.ylabel('Moves')
-plt.xlabel('Episode')
-plt.axhline(y=min_steps_num, color='g', linestyle='-', label=f'Optimal number of steps: {min_steps_num}')
-plt.ylim(bottom=0)
-plt.legend()
-plt.grid()
-
-plt.subplot(412)
-plt.plot(pd.Series(rewards_total).rolling(window).mean())
-plt.title('Reward Moving Average ({}-episode window)'.format(window))
-plt.ylabel('Reward')
-plt.xlabel('Episode')
-plt.ylim(-1.1, 1.1)
-plt.grid()
-
-plt.subplot(413)
-plt.plot(pd.Series(win_history).rolling(window).mean())
-plt.title('Wins Moving Average ({}-episode window)'.format(window))
-plt.ylabel('If won')
-plt.axhline(y=target_win_ratio, color='r', linestyle='-', label=f'Early stop condition: {target_win_ratio*100:.2f}%')
-plt.legend()
-plt.xlabel('Episode')
-plt.ylim(-0.1, 1.1)
-plt.grid()
+moving_average_history_save_path = os.path.join(results_path, "training_history_moving_average.jpg")
+plot_rolling_window_history(steps_total, rewards_total, win_history, random_params, target_win_ratio, min_steps_num, moving_average_history_save_path, window=window)
+history_save_path = os.path.join(results_path, "training_history.jpg")
+plot_history(steps_total, rewards_total, win_history, random_params, target_win_ratio, min_steps_num, history_save_path)
 
 
-plt.subplot(414)
-plt.plot(random_params)
-plt.title('Random Action Parameter')
-plt.ylabel('Chance Random Action')
-plt.xlabel('Episode')
-plt.ylim(-0.1, 1.1)
-plt.grid()
-
-plt.tight_layout(pad=2)
-plt.savefig("../results/classical_QL/training_history.jpg", dpi=900)
-plt.show()
-
-
-with open("../results/classical_QL/hyperparameters.txt", "w+") as f:
+with open(os.path.join(results_path, "hyperparameters.txt"), "w+") as f:
     f.write(f'gamma;{gamma}\n')
     f.write(f'epochs;{epochs}\n')
     f.write(f'max_steps;{max_steps}\n')

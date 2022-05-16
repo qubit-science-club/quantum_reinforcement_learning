@@ -6,29 +6,38 @@ from torch import optim
 from torch.nn import functional as F
 from torch import linalg as LA
 
-from torchsummary import summary
-import matplotlib.pyplot as plt
 import numpy as np 
-import pandas as pd
-
 from tqdm import tqdm
+
 from src.entropies import entanglement_entropy, classical_entropy
+from src.visualizations import *
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 
-gamma = 0.8
-epochs = 400
+global_seed = 123456
+
+torch.manual_seed(global_seed)
+np.random.seed(global_seed)
+
+
+gamma = 0.9
+epochs = 20000
 max_steps = 60
-learning_rate = 0.002
-random_chance = 0.99
-random_scaling = 0.99
+learning_rate = 0.0002
+non_random_chance = 0.99
+random_scaling = 0.9998
 window = 40
 target_win_ratio = 0.98
 min_steps_num = 6
 activation_function = 'sigmoid'
-hidden_layers = 1
+n_hidden_layers = 1
+results_folder = f'{n_hidden_layers}_layers_{activation_function}_activation'
+results_path = os.path.join('../results', 'classical_DQL_sim_quantum', results_folder)
+
+if not os.path.exists(results_path):
+    os.mkdir(results_path)
 
 
 # ## 1. Create a FrozenLake environment
@@ -58,45 +67,61 @@ def uniform_linear_layer(linear_layer):
 
 # ## 3. Define Agent model, basically for Q values
 class Agent(nn.Module):
-    def __init__(self, observation_space_size, action_space_size):
+    def __init__(self, observation_space_size, action_space_size, n_hidden_layers):
         super(Agent, self).__init__()
         self.observation_space_size = observation_space_size
         self.hidden_size = 2*self.observation_space_size
+
         self.l1 = nn.Linear(in_features=2*self.observation_space_size, out_features=self.hidden_size)
-        self.l2 = nn.Linear(in_features=self.hidden_size, out_features=self.hidden_size)
-        self.l3 = nn.Linear(in_features=self.hidden_size, out_features=self.hidden_size) 
-        self.l4 = nn.Linear(in_features=self.hidden_size, out_features=32) 
+        self.hidden_layers = [
+            nn.Linear(in_features=self.hidden_size, out_features=self.hidden_size) \
+                for i in range(n_hidden_layers)
+        ]
+        self.l2 = nn.Linear(in_features=self.hidden_size, out_features=32) 
+        self.activation = None
+        if activation_function=='lrelu':
+            self.activation = F.leaky_relu
+        if activation_function=='sigmoid':
+            self.activation = F.sigmoid
+        if activation_function=='tanh':
+            self.activation = F.tanh
 
         uniform_linear_layer(self.l1)
-        uniform_linear_layer(self.l2)
-        uniform_linear_layer(self.l3)
-        uniform_linear_layer(self.l4)
+        for l in self.hidden_layers:
+            uniform_linear_layer(l)
 
-        print("Set the neural network with \
-              \n\tInput size: \t{inp}, \
-              \n\tHidden layer size: \t{hidden} \
-              \n\tOutput size: \t{outp}"\
-              .format(inp=2*self.observation_space_size, hidden=self.hidden_size, outp=32))
+        uniform_linear_layer(self.l2)
+        
+        print('Set the neural network with:')
+        print(f'\tInput size: \t{2*self.observation_space_size}')
+        for i, l in enumerate(range(n_hidden_layers)):
+            print(f'\tHidden {i+1}. layer size: \t{self.hidden_size}')
+        print(f'\tOutput size: \t{32}')
     
     def forward(self, state):
         obs_emb = one_hot([int(2*state)], 2*self.observation_space_size)
-        out1 = torch.sigmoid(self.l1(obs_emb))
-        out2 = torch.sigmoid(self.l2(out1))
-        out3 = torch.sigmoid(self.l2(out2))
+        # first layer:
+        out1 = self.activation(self.l1(obs_emb))
+        
+        # hidden layers:
+        for l in self.hidden_layers:
+            out1 = self.activation(l(out1))
+        
+        # output layers:
+        out2 = self.activation(self.l2(out1))
 
-        #print("Forward", obs_emb, out1, self.l2(out1).view((-1)))
-        return self.l4(out3).view((-1)) # 1 x ACTION_SPACE_SIZE == 1 x 4  =>  4
+        return out2.view((-1)) 
 
 
 # ## 4. Define the Trainer to optimize Agent model
 class Trainer:
-    def __init__(self):
+    def __init__(self, n_hidden_layers):
         self.holes_indexes = np.array([5,7,11,12])
 
-        self.agent = Agent(lake.observation_space.n, lake.action_space.n)
+        self.agent = Agent(lake.observation_space.n, lake.action_space.n, n_hidden_layers)
         self.optimizer = optim.Adam(params=self.agent.parameters(), lr=learning_rate)
         
-        self.epsilon = random_chance
+        self.epsilon = non_random_chance
         self.epsilon_growth_rate = random_scaling
         self.gamma = gamma
         
@@ -115,7 +140,9 @@ class Trainer:
     
     def train(self, epoch):
         # entropies_episodes = [0] * (epoch+1)
-        for i in tqdm(range(epoch)):
+        for i in (pbar := tqdm(range(epoch))):
+            pbar.set_description(f'Success rate: {sum(self.success[-window:])/window:.2%} | Random chance: {self.epsilon:.2%}')
+            
             s = lake.reset() #stan na jeziorze 0-16, dla resetu 0
             j = 0
             self.entropies_episodes.append(0)
@@ -125,7 +152,9 @@ class Trainer:
                 a = self.choose_action(s)
                 s1, r, d, _ = lake.step(int(a))
                 if d == True and r == 0: r = -1
-                
+                elif d== True: r == 1
+                elif r==0: r = -0.01
+
                 # if self.print==False:
                 #     print(self.agent(s)[a])
                 #     self.print=True
@@ -157,7 +186,8 @@ class Trainer:
             self.reward_list.append(r)
             self.jList.append(j)
 
-            self.epsilon*=self.epsilon_growth_rate
+            if self.epsilon < 1.:
+                self.epsilon *= self.epsilon_growth_rate
             self.epsilon_list.append(self.epsilon)
 
             if i%10==0 and i>100:
@@ -211,117 +241,59 @@ class Trainer:
         return Q_out
     
     def Qstate(self, state):
-        
         Qstate = self.agent(state).detach()
         Qstate /= LA.norm(Qstate)
         return Qstate
     
     def Qstrategy(self):
-            return [torch.argmax(self.calc_probabilities(state)).item() for state in range(lake.observation_space.n)]
+        return [torch.argmax(self.calc_probabilities(state)).item() for state in range(lake.observation_space.n)]
     
 
 # ## 5. Initialize a trainer, and perform training by 2k epoches
-fl = Trainer()
+fl = Trainer(n_hidden_layers)
+
+t = torch.Tensor(np.array([32], dtype=int))
+t = t.to(torch.int32)
+
 print("Train through {epochs} epochs". format(epochs=epochs))
 fl.train(epochs)
 
-
-plt.plot(fl.jList, label="Steps in epoch")
-plt.plot(fl.success, label="If success")
-plt.legend()
-plt.title("Steps from epochs with success indicator")
-plt.show()
-
+plot_success_steps_history(fl.jList, fl.success)
 
 strategy = np.array(fl.Qstrategy()).reshape((4,4))
-#just for the plot purposes
-strategy_angles = ((2-strategy)%4)*90
-fig, axs = plt.subplots(1, 1, figsize=(3.5, 3.5), sharex=True, sharey=True,tight_layout=True)
-axs.set_aspect(1)
-x,y = np.meshgrid(np.linspace(0,3,4), np.linspace(3,0,4))
-axs.quiver(x, y, np.ones((x.shape))*1.5,np.ones((x.shape))*1.5,angles=np.flip(strategy_angles, axis=0), pivot='middle', units='xy')
-axs.scatter( [0], [0], c="cornflowerblue", s=150, alpha=0.6, label="start")
-axs.scatter( fl.holes_indexes%4, fl.holes_indexes//4, c="firebrick", s=150, alpha=0.6, label="hole")
-axs.scatter( [3], [3], c="mediumseagreen", s=150, alpha=0.6, label="goal")
-major_ticks = np.arange(0, 4, 1)
-axs.set_xticks(major_ticks)
-axs.set_yticks(major_ticks)
-axs.set_title("Move strategy from Qtable")
-axs.grid(which="major", alpha=0.4)
-axs.legend()
-plt.savefig("../results/classical_DQL_sim_quantum/trained_strategy.jpg", dpi=900)
-plt.show()
-
+strategy_save_path = os.path.join(results_path, "trained_strategy.jpg")
+plot_strategy(strategy, fl.holes_indexes, strategy_save_path)
 
 entropies = np.array(fl.entropies)
 cl_entropies = np.array(fl.cl_entropies)
+entropies_save_path = os.path.join(results_path, "entropies.jpg")
+plot_entropies(entropies, cl_entropies, entropies_save_path)
 
-fig, ax = plt.subplots()
-ax.plot(entropies, label="entglmt_entr Lax")
-ax.plot(cl_entropies, color='red', label="cl_entropy Rax", alpha=0.4)
-ax.legend()
-plt.savefig("../results/classical_DQL_sim_quantum/entanglement.jpg", dpi=900)
-plt.show()
-
-plt.figure(figsize=[9,16])
-plt.subplot(411)
-plt.plot(pd.Series(fl.jList).rolling(window).mean())
-plt.title('Step Moving Average ({}-episode window)'.format(window))
-plt.ylabel('Moves')
-plt.xlabel('Episode')
-plt.axhline(y=min_steps_num, color='g', linestyle='-', label=f'Optimal number of steps: {min_steps_num}')
-plt.ylim(bottom=0)
-plt.legend()
-plt.grid()
-
-plt.subplot(412)
-plt.plot(pd.Series(fl.reward_list).rolling(window).mean())
-plt.title('Reward Moving Average ({}-episode window)'.format(window))
-plt.ylabel('Reward')
-plt.xlabel('Episode')
-plt.ylim(-1.1, 1.1)
-plt.grid()
-
-plt.subplot(413)
-plt.plot(pd.Series(fl.success).rolling(window).mean())
-plt.title('Wins Moving Average ({}-episode window)'.format(window))
-plt.ylabel('If won')
-plt.axhline(y=target_win_ratio, color='r', linestyle='-', label=f'Early stop condition: {target_win_ratio*100:.2f}%')
-plt.legend()
-plt.xlabel('Episode')
-plt.ylim(-0.1, 1.1)
-plt.grid()
-
-plt.subplot(414)
-plt.plot(np.array(fl.epsilon_list))
-plt.title('Random Action Parameter')
-plt.ylabel('Chance Random Action')
-plt.xlabel('Episode')
-plt.ylim(-0.1, 1.1)
-plt.grid()
-
-plt.tight_layout(pad=2)
-plt.savefig("../results/classical_DQL_sim_quantum/training_history.jpg", dpi=900)
-plt.show()
+moving_average_history_save_path = os.path.join(results_path, "training_history_moving_average.jpg")
+plot_rolling_window_history(fl.jList, fl.reward_list, fl.success, np.array(fl.epsilon_list), target_win_ratio, min_steps_num, moving_average_history_save_path, window=window)
+history_save_path = os.path.join(results_path, "training_history.jpg")
+plot_history(fl.jList, fl.reward_list, fl.success, np.array(fl.epsilon_list), target_win_ratio, min_steps_num, history_save_path)
 
 
-with open("../results/classical_DQL_sim_quantum/hyperparameters.txt", "w+") as f:
+with open(os.path.join(results_path, "hyperparameters.txt"), "w+") as f:
     f.write(f'gamma;{gamma}\n')
     f.write(f'epochs;{epochs}\n')
     f.write(f'max_steps;{max_steps}\n')
     f.write(f'learning_rate;{learning_rate}\n')
-    f.write(f'random_chance;{random_chance}\n')
+    f.write(f'non_random_chance;{non_random_chance}\n')
     f.write(f'random_scaling;{random_scaling}\n')
     f.write(f'window;{window}\n')
     f.write(f'target_win_ratio;{target_win_ratio}\n')
     f.write(f'min_steps_num;{min_steps_num}\n')
+    f.write(f'n_hidden_layers;{n_hidden_layers}\n')
+    f.write(f'activation_function;{activation_function}\n')
+    f.write(f'global_seed;{global_seed}\n')
 
-
-with open("../results/classical_DQL_sim_quantum/entropies.txt", "w") as f:
+with open(os.path.join(results_path, "entropies.txt"), "w") as f:
     for ent in fl.entropies:
         f.write(str(ent)+";")
         
-with open("../results/classical_DQL_sim_quantum/cl_entropies.txt", "w") as f:
+with open(os.path.join(results_path, "cl_entropies.txt"), "w") as f:
     for ent in fl.cl_entropies:
         f.write(str(ent)+";")
 
@@ -341,13 +313,13 @@ with open("../results/classical_DQL_sim_quantum/cl_entropies.txt", "w") as f:
 #zmieni się to, jeżeli będziemy mieli do czynienia z innym przygotowaniem
 
 def decimalToBinaryFixLength(_length, _decimal):
-	binNum = bin(int(_decimal))[2:]
-	outputNum = [int(item) for item in binNum]
-	if len(outputNum) < _length:
-		outputNum = np.concatenate((np.zeros((_length-len(outputNum),)),np.array(outputNum)))
-	else:
-		outputNum = np.array(outputNum)
-	return outputNum
+    binNum = bin(int(_decimal))[2:]
+    outputNum = [int(item) for item in binNum]
+    if len(outputNum) < _length:
+        outputNum = np.concatenate((np.zeros((_length-len(outputNum),)),np.array(outputNum)))
+    else:
+        outputNum = np.array(outputNum)
+    return outputNum
 
 
 
