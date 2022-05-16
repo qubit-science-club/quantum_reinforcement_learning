@@ -250,7 +250,7 @@ It should be noted, that unfortunately due to this extension the agent's trainin
 
 As we can see, two kinds of entropy behave differently, although there is some correlation between them.
 
-Decrease in entropy often correlates with better reward. It is best seen near the end of the learning process, so entropy reduction might signal a stabilization of the learning process. But it doesn't apply the other way (lower entropy does not correlate with steady reward).
+Decrease in entropy often correlates with better reward. It is best seen near the end of the learning process, so entropy reduction might signal a stabilization of the learning process. But it doesn't apply the other way (steady reward does not imply lower entropy).
 
 ### Classical Q-learnig:
 
