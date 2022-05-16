@@ -228,7 +228,14 @@ It should be noted, that unfortunately due to this extension the agent's trainin
 
 ## Results
 
+ With earlystopping | WithOUT earlystopping 
+ :---: | :---: 
+![earlystopping_reward](results/quantum/earlystopping_Quantum_DQN_Frozen_Lake_NonSlip_Dynamic_Epsilon_RMSProp_REWARD_NO20220425223058.png) | ![without-earlystopping_reward](/results/quantum/Quantum_DQN_Frozen_Lake_NonSlip_Dynamic_Epsilon_RMSProp_REWARD_NO20220426183607.png)
+![earlystopping_entropies](results/quantum/earlystopping_entropies.png) | ![without-earlystopping_entropies](/results/quantum/entropies.png)
 
 
+[comment]: # (Te opisy before loss, after loss mogą być mylące, a i tak nie wnoszą za dużo)
 
+As we can see, two kinds of entropy behave differently, although there is some correlation between them.
 
+Decrease in entropy often correlates with better reward. It is best seen near the end of the learning process, so entropy reduction might signal a stabilization of the learning process. But it doesn't apply the other way (lower entropy does not correlate with steady reward).
