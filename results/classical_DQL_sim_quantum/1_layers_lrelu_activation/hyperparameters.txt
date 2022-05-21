@@ -9,4 +9,4 @@ target_win_ratio;0.98
 min_steps_num;6
 n_hidden_layers;1
 activation_function;lrelu
-global_seed;42
+global_seed;123456

@@ -244,8 +244,8 @@ It should be noted, that unfortunately due to this extension the agent's trainin
 ### Classical Q-learnig:
 
 Classical Q-learning model learns for wide range of parameters and has very predictible behaviour: 
-* 1. agent wanders untils spot reward 
-* 2. then stays on that path usually optimizing path to the shortest one in few epochs
+ 1. agent wanders untils spot reward 
+ 2. then stays on that path usually optimizing path to the shortest one in few epochs
 The only fun is to set hyperparamers to converge as fast as possible. 
 
 ![image](./assets/QL_results.jpg)
@@ -282,23 +282,23 @@ User can run our [script](./scripts/3._Classical_DQL_sim_quant.py), all paramers
 #### **2. Grid search for the best architecture:**
 
 * *Model*: 
-    * **hidden layers**: from 1 to 6 incl.
+    * **Hidden layers**: from 1 to 6 incl.
     * **Activation functions**: sigmoid, hyperbolic tangent and leaky relu with slope 0.1
 * *Goal*: Here we put training with slightly lower hyperparameters, which gaves training 'pace' (learning rate, random paramer scaling etc.) and run every combination of tested architectures for `20'000` epochs to choose best architecture to hyperparameter finetuning.
 * *Results*: 
     * None of the models trained to win. 
     * Most promising results shown leaky relu, but we quit it in next stage since it 'favors' positive values.
     * Tangent performs the worst.
-    * Model starts to train for 1 and 2 hidden layers, for 3 and above hidden layers the architecture seems to complicated.
+    * Model starts to train for 1 and 2 hidden layers, for 3 and over hidden layers the architecture seems to be too complicated.
 
 All the results are in [results directory](./results/classical_DQL_sim_quantum/). Script used for training is [here](./scripts/3b._Classical_DQL_sim_quant_grid_search.py).
 
 #### **3. Automatic hyperparamers finetuning :**
 
-For this stage we user `pyTorch` [finetuning tutorial](https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html) with `ray`.
+For this stage we used `pyTorch` [finetuning tutorial](https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html) with `ray`.
 
 * *Model*: 
-    * **hidden layers**: from 1 to 2 incl.
+    * **Hidden layers**: from 1 to 2 incl.
     * **Activation functions**: sigmoid
 * *Goal*: Final, automatic, full scale finetuning. 
 * *Results*: 
@@ -306,7 +306,7 @@ For this stage we user `pyTorch` [finetuning tutorial](https://pytorch.org/tutor
 
 Notebook used for training is [here](./scripts/3c._Classical_DQL_sim_quant_finetuning.ipynb). Finetuning was performed on Google Collab on P100 GPU with 20 parallel experiments.
 
-### Final results:
+### Results:
 
 For best model which almost trained, we can see convergence of (both) entropies to zero, right in epochs, where model started to reach goal:
 
@@ -315,7 +315,7 @@ For best model which almost trained, we can see convergence of (both) entropies 
 
 All parameters are in [results folder](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation/). 
 
-However this method is incomparably harder to obtain effective model for environment. Not only in terms of hyperparameters sensitivity, but also from training duration and only small amount of 'succesful' experiments i.e. model which has mean win ratio ~40%. Also to obtain 'succesful' model we need to stop in right place i.e. for smaller win ratio early stop condition, which does not guarantee optimal path.
+However this method is incomparably harder to obtain effective model for environment. Not only in terms of hyperparameters sensitivity, but also from training duration and only small amount of 'succesful' experiments i.e. model which has mean win ratio over 40%. Also to obtain 'succesful' model we need to stop in right place i.e. for smaller win ratio early stop condition, which does not guarantee optimal path.
 
 Interesting is, that models with 'real' quantum circuits (not simulated by neural network) were able to train, even if rarely. 
 This shows that simulating quantum distributions for classical nerual networks can be tough. In our case particularly with:
