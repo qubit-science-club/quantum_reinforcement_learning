@@ -1,7 +1,9 @@
 from itertools import product
 
-activations = ['lrelu', 'sigmoid', 'tanh']
-n_layers = list(range(1,7))
+#activations = ['lrelu', 'sigmoid', 'tanh']
+activations = ['tanh']
+
+n_layers = list(range(4,7))
 global_seed = 123456
 
 
