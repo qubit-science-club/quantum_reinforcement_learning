@@ -12,7 +12,7 @@ Code was developed and run on `Python` version `3.9.11`. All main requirements a
 │   ├───classical_QL                    # classical Q-learning results directory
 │   ├───classical_DQL                   # classical DQL results directory
 │   ├───classical_DQL_sim_quantum       # classical DQL simulating quantum model results directory
-│   └───...                             # quantum model results directory
+│   └───quantum                         # quantum model results directory
 │
 ├───scripts                             # scripts for generating results
 │   ├───src                             # source code directory
@@ -110,7 +110,7 @@ However, in our case, we use the so-called Deep Q-Learning (DQL). To make decisi
 
 For example, if we would like to check which way is the best to go from the field number 5, we activate the neuron with index 4
 
-![](assets/dql.png "DQL")
+![](assets/DQL_NN_architecture.png "DQL")
 
 
 We can access the exact values returned by the neural network as follows
@@ -302,7 +302,11 @@ User can run our [script](./scripts/3._Classical_DQL_sim_quant.py), all paramers
     * Tangent performs the worst.
     * Model starts to train for 1 and 2 hidden layers, for 3 and over hidden layers the architecture seems to be too complicated.
 
-All the results are in [results directory](./results/classical_DQL_sim_quantum/). Script used for training is [here](./scripts/3b._Classical_DQL_sim_quant_grid_search.py).
+However, the one layer architecture with sigmoid activation function almost trained (has around 90% win ratio at the end of a training). Naturally we put it in **training with 30'000 epochs and it trained calling early stop on 22800 epoch**. Model converged to optimal number of steps, but the training history is very chaotic in comparison to the previous methods. 
+This experiment information and history is in [this directory](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation_longer/).
+
+All the other results are in [grid_search release](./results/classical_DQL_sim_quantum/) in `results` directory. They were too big to include them into main repository (weighting around 0.5 GB).  
+Script used for training is [here](./scripts/3b._Classical_DQL_sim_quant_grid_search.py).
 
 #### **3. Automatic hyperparamers finetuning :**
 
@@ -317,14 +321,14 @@ For this stage we used `pyTorch` [finetuning tutorial](https://pytorch.org/tutor
 
 Notebook used for training is [here](./scripts/3c._Classical_DQL_sim_quant_finetuning.ipynb). Finetuning was performed on Google Collab on P100 GPU with 20 parallel experiments.
 
-### Results:
+### **Results**:
 
-For best model which almost trained, we can see convergence of (both) entropies to zero, right in epochs, where model started to reach goal:
+For best classical model simulating quantum model, we can see convergence of (both) entropies to zero, right in epochs, where model started to reach goal:
 
 ![image](./assets/DQL_sim_quant_results.jpg)
-![image](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation/entropies.jpg)
+![image](./assets/DQL_sim_quant/entropies.jpg)
 
-All parameters are in [results folder](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation/). 
+All parameters are in [results folder](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation_longer/). 
 
 However this method is incomparably harder to obtain effective model for environment. Not only in terms of hyperparameters sensitivity, but also from training duration and only small amount of 'succesful' experiments i.e. model which has mean win ratio over 40%. Also to obtain 'succesful' model we need to stop in right place i.e. for smaller win ratio early stop condition, which does not guarantee optimal path.
 
