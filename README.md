@@ -9,6 +9,7 @@ Code was developed and run on `Python` version `3.9.11`. All main requirements a
 ```
 ├───assets                              # assets for readme
 ├───results                             # results from training
+│   ├───auto_hp_tuning                  # auto hyperparameter finetunign results directory
 │   ├───classical_QL                    # classical Q-learning results directory
 │   ├───classical_DQL                   # classical DQL results directory
 │   ├───classical_DQL_sim_quantum       # classical DQL simulating quantum model results directory
@@ -22,6 +23,7 @@ Code was developed and run on `Python` version `3.9.11`. All main requirements a
 │   │   3._Classical_DQL_sim_quant.py   # classical Deep Q-learning simulating quantum circuit
 │   │   3b._Classical_DQL_sim_quant_grid_search.py   # script no. 3 for grid search finetuning
 │   │   3c._Classical_DQL_sim_quant_finetuning.ipynb # script no. 3 with automatic hyperparameter finetuning
+│   │   auto_hp_tuning_visuals.py       # auto hyperparameter finetuning results ploting script
 │   
 └───tutorials                           # supplementary tutorials to start with
 
@@ -315,11 +317,28 @@ For this stage we used `pyTorch` [finetuning tutorial](https://pytorch.org/tutor
 * *Model*: 
     * **Hidden layers**: from 1 to 2 incl.
     * **Activation functions**: sigmoid
+* *Details*:
+    * 150 experiments run 12 at once with scheduler setting next 16 in queue
+    * 30'000 epochs per experiment, with grace period for early stopper from scheduler on 15'000 epochs
+    * We used [ray's ASHA scheduler](https://docs.ray.io/en/latest/tune/api_docs/schedulers.html)
+
+
 * *Goal*: Final, automatic, full scale finetuning. 
 * *Results*: 
-    * ... (in progress) ...
+    * only one of the experiments trained with lowered win_ratio threshold set to 70% from last 100 epochs. (Gamma: ~`0.92`, learning rate: ~`0.008`, random scaling: ~`0.9998`, `1` hidden layer)
+    * The only winner architecture is very similar to our parameters from previous stages:
+        * Best model from 2nd stage: Gamma: `0.9`, learning rate: ~`0.0002`, random scaling: `0.9998`, `1` hidden layer.
+    * 1 hidden layers model dominates in higher win ratio domain
+    
 
-Notebook used for training is [here](./scripts/3c._Classical_DQL_sim_quant_finetuning.ipynb). Finetuning was performed on Google Collab on P100 GPU with 20 parallel experiments.
+| Results on scatter plot  | Results on triangular surface |
+| ------------- | ------------- |
+| ![results_scatter_plot](./results/auto_hp_tuning/results_scatter_plot.gif)  | ![results_triangular_surface](./results/auto_hp_tuning/results_triangular_surface.gif)  |
+| Violet dots are models with 1 hidden layers. <br/> Yellow dots are models with 2 hidden layers. | |
+
+All the details are in [results csv file](./results/auto_hp_tuning/results.csv).
+
+Notebook used for training is [here](./scripts/3c._Classical_DQL_sim_quant_finetuning.ipynb). Finetuning was performed on desktop with i5-8600K 3.6 GHz CPU (6 CPUs) and Nvidia 2060 RTX GPU.
 
 ### **Results**:
 
