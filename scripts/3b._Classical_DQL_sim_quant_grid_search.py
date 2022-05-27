@@ -1,6 +1,7 @@
 from itertools import product
 
 activations = ['lrelu', 'sigmoid', 'tanh']
+
 n_layers = list(range(1,7))
 global_seed = 123456
 

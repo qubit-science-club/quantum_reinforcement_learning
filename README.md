@@ -9,10 +9,11 @@ Code was developed and run on `Python` version `3.9.11`. All main requirements a
 ```
 ├───assets                              # assets for readme
 ├───results                             # results from training
+│   ├───auto_hp_tuning                  # auto hyperparameter finetunign results directory
 │   ├───classical_QL                    # classical Q-learning results directory
 │   ├───classical_DQL                   # classical DQL results directory
 │   ├───classical_DQL_sim_quantum       # classical DQL simulating quantum model results directory
-│   └───...                             # quantum model results directory
+│   └───quantum                         # quantum model results directory
 │
 ├───scripts                             # scripts for generating results
 │   ├───src                             # source code directory
@@ -22,6 +23,7 @@ Code was developed and run on `Python` version `3.9.11`. All main requirements a
 │   │   3._Classical_DQL_sim_quant.py   # classical Deep Q-learning simulating quantum circuit
 │   │   3b._Classical_DQL_sim_quant_grid_search.py   # script no. 3 for grid search finetuning
 │   │   3c._Classical_DQL_sim_quant_finetuning.ipynb # script no. 3 with automatic hyperparameter finetuning
+│   │   auto_hp_tuning_visuals.py       # auto hyperparameter finetuning results ploting script
 │   
 └───tutorials                           # supplementary tutorials to start with
 
@@ -110,7 +112,7 @@ However, in our case, we use the so-called Deep Q-Learning (DQL). To make decisi
 
 For example, if we would like to check which way is the best to go from the field number 5, we activate the neuron with index 4
 
-![](assets/dql.png "DQL")
+![](assets/DQL_NN_architecture.png "DQL")
 
 
 We can access the exact values returned by the neural network as follows
@@ -254,8 +256,8 @@ Decrease in entropy often correlates with better reward. It is best seen near th
 ### Classical Q-learnig:
 
 Classical Q-learning model learns for wide range of parameters and has very predictible behaviour: 
-* 1. agent wanders untils spot reward 
-* 2. then stays on that path usually optimizing path to the shortest one in few epochs
+ 1. agent wanders untils spot reward 
+ 2. then stays on that path usually optimizing path to the shortest one in few epochs
 The only fun is to set hyperparamers to converge as fast as possible. 
 
 ![image](./assets/QL_results.jpg)
@@ -292,40 +294,61 @@ User can run our [script](./scripts/3._Classical_DQL_sim_quant.py), all paramers
 #### **2. Grid search for the best architecture:**
 
 * *Model*: 
-    * **hidden layers**: from 1 to 6 incl.
+    * **Hidden layers**: from 1 to 6 incl.
     * **Activation functions**: sigmoid, hyperbolic tangent and leaky relu with slope 0.1
 * *Goal*: Here we put training with slightly lower hyperparameters, which gaves training 'pace' (learning rate, random paramer scaling etc.) and run every combination of tested architectures for `20'000` epochs to choose best architecture to hyperparameter finetuning.
 * *Results*: 
     * None of the models trained to win. 
     * Most promising results shown leaky relu, but we quit it in next stage since it 'favors' positive values.
     * Tangent performs the worst.
-    * Model starts to train for 1 and 2 hidden layers, for 3 and above hidden layers the architecture seems to complicated.
+    * Model starts to train for 1 and 2 hidden layers, for 3 and over hidden layers the architecture seems to be too complicated.
 
-All the results are in [results directory](./results/classical_DQL_sim_quantum/). Script used for training is [here](./scripts/3b._Classical_DQL_sim_quant_grid_search.py).
+However, the one layer architecture with sigmoid activation function almost trained (has around 90% win ratio at the end of a training). Naturally we put it in **training with 30'000 epochs and it trained calling early stop on 22800 epoch**. Model converged to optimal number of steps, but the training history is very chaotic in comparison to the previous methods. 
+This experiment information and history is in [this directory](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation_longer/).
+
+All the other results are in [grid_search release](./results/classical_DQL_sim_quantum/) in `results` directory. They were too big to include them into main repository (weighting around 0.5 GB).  
+Script used for training is [here](./scripts/3b._Classical_DQL_sim_quant_grid_search.py).
 
 #### **3. Automatic hyperparamers finetuning :**
 
-For this stage we user `pyTorch` [finetuning tutorial](https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html) with `ray`.
+For this stage we used `pyTorch` [finetuning tutorial](https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html) with `ray`.
 
 * *Model*: 
-    * **hidden layers**: from 1 to 2 incl.
+    * **Hidden layers**: from 1 to 2 incl.
     * **Activation functions**: sigmoid
+* *Details*:
+    * 150 experiments run 12 at once with scheduler setting next 16 in queue
+    * 30'000 epochs per experiment, with grace period for early stopper from scheduler on 15'000 epochs
+    * We used [ray's ASHA scheduler](https://docs.ray.io/en/latest/tune/api_docs/schedulers.html)
+
+
 * *Goal*: Final, automatic, full scale finetuning. 
 * *Results*: 
-    * ... (in progress) ...
+    * only one of the experiments trained with lowered win_ratio threshold set to 70% from last 100 epochs. (Gamma: ~`0.92`, learning rate: ~`0.008`, random scaling: ~`0.9998`, `1` hidden layer)
+    * The only winner architecture is very similar to our parameters from previous stages:
+        * Best model from 2nd stage: Gamma: `0.9`, learning rate: ~`0.0002`, random scaling: `0.9998`, `1` hidden layer.
+    * 1 hidden layers model dominates in higher win ratio domain
+    
 
-Notebook used for training is [here](./scripts/3c._Classical_DQL_sim_quant_finetuning.ipynb). Finetuning was performed on Google Collab on P100 GPU with 20 parallel experiments.
+| Results on scatter plot  | Results on triangular surface |
+| ------------- | ------------- |
+| ![results_scatter_plot](./results/auto_hp_tuning/results_scatter_plot.gif)  | ![results_triangular_surface](./results/auto_hp_tuning/results_triangular_surface.gif)  |
+| Violet dots are models with 1 hidden layers. <br/> Yellow dots are models with 2 hidden layers. | |
 
-### Final results:
+All the details are in [results csv file](./results/auto_hp_tuning/results.csv).
 
-For best model which almost trained, we can see convergence of (both) entropies to zero, right in epochs, where model started to reach goal:
+Notebook used for training is [here](./scripts/3c._Classical_DQL_sim_quant_finetuning.ipynb). Finetuning was performed on desktop with i5-8600K 3.6 GHz CPU (6 CPUs) and Nvidia 2060 RTX GPU.
+
+### **Results**:
+
+For best classical model simulating quantum model, we can see convergence of (both) entropies to zero, right in epochs, where model started to reach goal:
 
 ![image](./assets/DQL_sim_quant_results.jpg)
-![image](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation/entropies.jpg)
+![image](./assets/DQL_sim_quant/entropies.jpg)
 
-All parameters are in [results folder](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation/). 
+All parameters are in [results folder](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation_longer/). 
 
-However this method is incomparably harder to obtain effective model for environment. Not only in terms of hyperparameters sensitivity, but also from training duration and only small amount of 'succesful' experiments i.e. model which has mean win ratio ~40%. Also to obtain 'succesful' model we need to stop in right place i.e. for smaller win ratio early stop condition, which does not guarantee optimal path.
+However this method is incomparably harder to obtain effective model for environment. Not only in terms of hyperparameters sensitivity, but also from training duration and only small amount of 'succesful' experiments i.e. model which has mean win ratio over 40%. Also to obtain 'succesful' model we need to stop in right place i.e. for smaller win ratio early stop condition, which does not guarantee optimal path.
 
 Interesting is, that models with 'real' quantum circuits (not simulated by neural network) were able to train, even if rarely. 
 This shows that simulating quantum distributions for classical nerual networks can be tough. In our case particularly with:
