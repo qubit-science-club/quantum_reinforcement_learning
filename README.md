@@ -80,8 +80,8 @@ HFFG
 The agent is always in one of the spaces and, based on his policy, decides to move in one direction (left, right, up, down). The entire walk focuses on the reward, which the agent increases or decreases by entering a specific field.
 Scoring example:
 
-- Frozen surface: -0.01 to the reward (penalty to eliminate detour or walking in circles),
-- Starting point: -0.01 to reward,
+- Frozen surface: 0 or -0.01 to the reward (optional penalty to eliminate detour or walking in circles),
+- Starting point: 0 or -0.01 to reward,
 - Hole: -1 to the reward,
 - End point: +1 to the reward.
 
@@ -226,14 +226,15 @@ At the very end we are conducting a measurement of each qubit and basing on the 
 
 Because the training proces of VQC is very unstable we are (similarly as in the case of classical approach) using early stopping. We are terminating the procedure if during the last 20 epochs the reward didn't change and was positive.
 
-## Extended classical model
+## Extended classical model (NN simulating VQC)
 <br/>
 
 >Run in [this script](./scripts/3._Classical_DQL_sim_quant.py) 
 🚀
 
 <br/>
-
+We have also tested classical Neural Network, which mimic quantum model behaviour. 
+<br/>
 
 It's important to note, that the state vector given by the VQC consists of ![equation](https://latex.codecogs.com/svg.image?2^n) complex variables, where *n* is the number of qubits, which in our case gives 16 numbers. To resemble this situation as close as possible we are extending the classical model by increasing the number of neurons in each layer (also the output one) to 32. We are using 32 real numbers to encode 16 complex ones.
 
@@ -256,13 +257,13 @@ Decrease in entropy often correlates with better reward. It is best seen near th
 ### Classical Q-learnig:
 
 Classical Q-learning model learns for wide range of parameters and has very predictible behaviour: 
- 1. agent wanders untils spot reward 
+ 1. agent wanders until spots reward 
  2. then stays on that path usually optimizing path to the shortest one in few epochs
 The only fun is to set hyperparamers to converge as fast as possible. 
 
 ![image](./assets/QL_results.jpg)
 
-We didn't calculate here entanglement entropies. This one is just complementary proof of concept.
+We didn't calculate entanglement entropies here. This one is just complementary proof of concept.
 
 ### Deep Q-learning:
 
@@ -278,7 +279,7 @@ It's behaviour is very random, but in the end Shannon entropy stops around `0` a
 
 ### Deep Q-learning simulating quantum circuit (Extended classical model):
 
-Here was a lot of trouble to train the model. We were seeking architecture and hyperparameters in 3 stages:
+Here was a lot of trouble to train this model. We were seeking best architecture and set of hyperparameters in 3 stages:
 
 ### **Finetuning stages:**
 -----
@@ -306,7 +307,7 @@ User can run our [script](./scripts/3._Classical_DQL_sim_quant.py), all paramers
 However, the one layer architecture with sigmoid activation function almost trained (has around 90% win ratio at the end of a training). Naturally we put it in **training with 30'000 epochs and it trained calling early stop on 22800 epoch**. Model converged to optimal number of steps, but the training history is very chaotic in comparison to the previous methods. 
 This experiment information and history is in [this directory](./results/classical_DQL_sim_quantum/_BEST_1_layers_sigmoid_activation_longer/).
 
-All the other results are in [grid_search release](./results/classical_DQL_sim_quantum/) in `results` directory. They were too big to include them into main repository (weighting around 0.5 GB).  
+All the other results are in [release with full results](./results/classical_DQL_sim_quantum/) in `results` directory. They were too big to include them into main repository (weighting around 0.5 GB).  
 Script used for training is [here](./scripts/3b._Classical_DQL_sim_quant_grid_search.py).
 
 #### **3. Automatic hyperparamers finetuning :**
@@ -318,13 +319,14 @@ For this stage we used `pyTorch` [finetuning tutorial](https://pytorch.org/tutor
     * **Activation functions**: sigmoid
 * *Details*:
     * 150 experiments run 12 at once with scheduler setting next 16 in queue
-    * 30'000 epochs per experiment, with grace period for early stopper from scheduler on 15'000 epochs
+    * 30'000 epochs per experiment, with grace period for early stopper from scheduler on 15'000 epochs. Early stopper was enabled to prevent wasting resources for models, that doesn't train.
     * We used [ray's ASHA scheduler](https://docs.ray.io/en/latest/tune/api_docs/schedulers.html)
 
 
-* *Goal*: Final, automatic, full scale finetuning. 
+* *Goal*: 
+    * Final, automatic, full scale finetuning. 
 * *Results*: 
-    * only one of the experiments trained with lowered win_ratio threshold set to 70% from last 100 epochs. (Gamma: ~`0.92`, learning rate: ~`0.008`, random scaling: ~`0.9998`, `1` hidden layer)
+    * only one of the experiments trained with lowered win ratio threshold set to 70% from last 100 epochs. (Gamma: ~`0.92`, learning rate: ~`0.008`, random scaling: ~`0.9998`, `1` hidden layer)
     * The only winner architecture is very similar to our parameters from previous stages:
         * Best model from 2nd stage: Gamma: `0.9`, learning rate: ~`0.0002`, random scaling: `0.9998`, `1` hidden layer.
     * 1 hidden layers model dominates in higher win ratio domain
