@@ -250,9 +250,7 @@ It should be noted, that unfortunately due to this extension the agent's trainin
 ![earlystopping_entropies](results/quantum/earlystopping_entropies.png) | ![without-earlystopping_entropies](/results/quantum/entropies.png)
 
 
-As we can see, two kinds of entropy behave differently, although there is some correlation between them.
-
-Decrease in entropy often correlates with better reward. It is best seen near the end of the learning process, so entropy reduction might signal a stabilization of the learning process. But it doesn't apply the other way (steady reward does not imply lower entropy).
+As we can see, the two kinds of entropy behave differently and there is no obvious correltation between both of them (and also between entropies and the obtained reward).
 
 ### Classical Q-learnig:
 
@@ -335,7 +333,7 @@ All the details are in [results csv file](./results/auto_hp_tuning/results.csv).
 
 Notebook used for training is [here](./scripts/3c._Classical_DQL_sim_quant_finetuning.ipynb). Finetuning was performed on desktop with i5-8600K 3.6 GHz CPU (6 CPUs) and Nvidia 2060 RTX GPU.
 
-### **Results**:
+### **Results of classical model simulating quantum model**:
 
 For best classical model simulating quantum model, we can see convergence of (both) entropies to zero, right in epochs, where model started to reach goal:
 
@@ -353,3 +351,14 @@ This shows that simulating quantum distributions for classical nerual networks c
 
 Similar conclusions, that quantum disribution can be hard to simulate, can be found in literature e.g. *Learning hard quantum distributions with variational
 autoencoders* [Rochetto et, al. 2018](https://www.nature.com/articles/s41534-018-0077-z.pdf).
+
+# Conclusions
+
+We examined two kinds of entropy - the von Neumann (entanglement) entropy and Shannon entropy of the output vector (treated as a quantum state-vector) returned by different ML models. It's worth noticing, that these two values are the same, when we express the (quantum) state vector in the Schmidt basis (which can be obtained by means of the SVD). See [here](https://physics.stackexchange.com/questions/600120/von-neumann-entropy-vs-shannon-entropy-for-a-quantum-state-vector/608071#608071) for more details. However, the SVD is never conducted when training ML models, which justifies the different behaviour of the curves presented in above plots. However, we were not able to find any obvious relations between these two entropies, and also between them and the reward obtained by the agent.
+
+Finally, **we suggest, that the von Neumann entropy can be also used during the training of any (classical) ML model**, which outputs a vector of length $4^n$, for some integer $n$. In that case we would just treat the output as the state vector of some quantum system. **The maximization of entropy is widely used in RL by adding it as a bonus component to the loss function (as described [here](https://awjuliani.medium.com/maximum-entropy-policies-in-reinforcement-learning-everyday-life-f5a1cc18d32d) and [here](https://towardsdatascience.com/entropy-regularization-in-reinforcement-learning-a6fa6d7598df)), so it would be interesting to see, if we could gain some different behaviour of an agent by utilizing the entanglement entropy in a similar way**. It should be possible, because the von Neumann entropy is differentiable (see [here](https://math.stackexchange.com/questions/3123031/derivative-of-the-von-neumann-entropy), [here](https://math.stackexchange.com/questions/2877997/derivative-of-von-neumann-entropy) and [here](https://quantumcomputing.stackexchange.com/questions/22263/how-to-compute-derivatives-of-partial-traces-of-the-form-frac-partial-operat)).
+
+
+
+
+
