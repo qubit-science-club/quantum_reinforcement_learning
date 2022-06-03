@@ -271,12 +271,6 @@ Learns slower than non-deep version and is slightly more sensitive to hyperparam
 
 ![image](./assets/DQL_results.jpg)
 
-Here we've calculated entropy after every step (in contrary to every epoch for other values):
-
-![image](./results/classical_DQL/entropies.jpg)
-
-It's behaviour is very random, but in the end Shannon entropy stops around `0` and entanglement entropy reach almost `2`. It only occurs, when the model train good path (converge to winning strategy).
-
 ### Deep Q-learning simulating quantum circuit (Extended classical model):
 
 Here was a lot of trouble to train this model. We were seeking best architecture and set of hyperparameters in 3 stages:

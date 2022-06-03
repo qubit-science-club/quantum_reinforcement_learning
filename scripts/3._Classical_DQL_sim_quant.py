@@ -23,7 +23,7 @@ np.random.seed(global_seed)
 
 
 gamma = 0.9
-epochs = 20000
+epochs = 30000
 max_steps = 60
 learning_rate = 0.0002
 non_random_chance = 0.99
@@ -33,7 +33,7 @@ target_win_ratio = 0.98
 min_steps_num = 6
 activation_function = 'sigmoid'
 n_hidden_layers = 1
-results_folder = f'{n_hidden_layers}_layers_{activation_function}_activation'
+results_folder = f'_BEST_{n_hidden_layers}_layers_{activation_function}_activation_longer'
 results_path = os.path.join('../results', 'classical_DQL_sim_quantum', results_folder)
 
 if not os.path.exists(results_path):
@@ -171,8 +171,8 @@ class Trainer:
                 # update state
                 s = s1
                 if(self.compute_entropy):
-                    self.entropies.append(entanglement_entropy(self.calc_probabilities(s))) 
-                    self.cl_entropies.append(classical_entropy(self.calc_probabilities(s))) 
+                    self.entropies.append(entanglement_entropy(self.calc_statevector(s))) 
+                    self.cl_entropies.append(classical_entropy(self.calc_statevector(s))) 
                     self.entropies_episodes[i] += 1
                 
                 if d == True: break
@@ -205,9 +205,12 @@ class Trainer:
             action = torch.tensor(np.random.randint(0, 4))
         return action
     
+    def calc_statevector(self, s):
+        return torch.complex(self.agent(s)[0::2], self.agent(s)[1::2])
+
     def calc_probability(self, s, a): #liczenie prawdopodobieństwa obsadzenia kubitu (0-3) z danego stanu planszy (0-15)
-        raw_wavefunction = torch.complex(self.agent(s)[0::2], self.agent(s)[1::2])
-        probabilities = (raw_wavefunction.abs()**2)
+        statevector = torch.complex(self.agent(s)[0::2], self.agent(s)[1::2])
+        probabilities = (statevector.abs()**2)
         probabilities = probabilities/probabilities.sum() #normowanie
         prob_indexes = [
             [0,1,2,3,4,5,6,7],
