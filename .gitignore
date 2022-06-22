@@ -3,3 +3,7 @@
 _archive
 
 results/classical_DQL_sim_quantum_full.7z
+/scripts/_external_sv_save.py
+/scripts/3z_entropy-calculation.ipynb
+/results/classical_DQL_sim_quantum_sv
+/results/classical_DQL_sim_quantum_sv.7z
