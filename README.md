@@ -369,4 +369,4 @@ Project was developed as part of [science club "Qubit"](http://qubit.pwr.edu.pl/
 
 Code and other materials are  under [MIT license](LICENSE).
 
-> **Disclaimer**: <br/> Our project use fragments of code from other sources, sometimes with different licenses. All these fragments are marked properly. MIT license refers only to our original code.
+> **Disclaimer**: <br/> Our project uses fragments of code from other sources, sometimes with different licenses. All these fragments are marked properly. MIT license refers only to our original code.
