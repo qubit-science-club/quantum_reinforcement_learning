@@ -360,7 +360,13 @@ We can see that in the case of a classical model trying to reproduce the behavio
 
 Finally, **we suggest, that the von Neumann entropy can be also used during the training of any (classical) ML model**, which outputs a vector of length $4^n$, for some integer $n$. In that case we would just treat the output as the state vector of some quantum system. **The maximization of entropy is widely used in RL by adding it as a bonus component to the loss function (as described [here](https://awjuliani.medium.com/maximum-entropy-policies-in-reinforcement-learning-everyday-life-f5a1cc18d32d) and [here](https://towardsdatascience.com/entropy-regularization-in-reinforcement-learning-a6fa6d7598df)), so it would be interesting to see, if we could gain some different behaviour of an agent by utilizing the entanglement entropy in a similar way**. It should be possible, because the von Neumann entropy is differentiable (see [here](https://math.stackexchange.com/questions/3123031/derivative-of-the-von-neumann-entropy), [here](https://math.stackexchange.com/questions/2877997/derivative-of-von-neumann-entropy) and [here](https://quantumcomputing.stackexchange.com/questions/22263/how-to-compute-derivatives-of-partial-traces-of-the-form-frac-partial-operat)).
 
+## Authors:
 
+M.Sc. Bartosz Rzepkowski <>, Janusz Twardak <>, Michał Łukomski <>, Marek Kowalik <marekkowalik97@gmail.com>.
+Project was developed as part of [science club "Qubits"](http://qubit.pwr.edu.pl/) ([Wrocław University of Science and Technology](https://pwr.edu.pl/en/)) work.
 
+## License:
 
+Code and other materials are  under [MIT license](LICENSE).
 
+> **Disclaimer**: <br/> Our project use fragments of code from other sources, sometimes with different licenses. All these fragments are marked properly. MIT license refers only to our original code.
