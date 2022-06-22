@@ -362,8 +362,8 @@ Finally, **we suggest, that the von Neumann entropy can be also used during the 
 
 ## Authors:
 
-M.Sc. Bartosz Rzepkowski <>, Janusz Twardak <>, Michał Łukomski <>, Marek Kowalik <marekkowalik97@gmail.com>.
-Project was developed as part of [science club "Qubits"](http://qubit.pwr.edu.pl/) ([Wrocław University of Science and Technology](https://pwr.edu.pl/en/)) work.
+M.Sc. Bartosz Rzepkowski, Janusz Twardak, Michał Łukomski, Marek Kowalik <marekkowalik97@gmail.com>. <br/>
+Project was developed as part of [science club "Qubit"](http://qubit.pwr.edu.pl/) ([Wrocław University of Science and Technology](https://pwr.edu.pl/en/)) work.
 
 ## License:
 
