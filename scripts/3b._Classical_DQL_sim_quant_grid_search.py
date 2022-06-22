@@ -181,9 +181,10 @@ for i, (activation_function, n_hidden_layers) in enumerate(product(activations, 
                     # update state
                     s = s1
                     if(self.compute_entropy):
-                        self.entropies.append(entanglement_entropy(self.calc_statevector(s))) 
-                        self.cl_entropies.append(classical_entropy(self.calc_statevector(s))) 
-                        self.entropies_episodes[i] += 1
+                        with torch.inference_mode():
+                            self.entropies.append(entanglement_entropy(self.calc_statevector(s))) 
+                            self.cl_entropies.append(classical_entropy(self.calc_statevector(s))) 
+                            self.entropies_episodes[i] += 1
                     
                     if d == True: break
                 
@@ -200,7 +201,7 @@ for i, (activation_function, n_hidden_layers) in enumerate(product(activations, 
                     self.epsilon *= self.epsilon_growth_rate
                 self.epsilon_list.append(self.epsilon)
 
-                if i%10==0 and i>100:
+                if i>100:
                     if sum(self.success[-window:])/window>target_win_ratio:
                         print("Network trained before epoch limit on {i} epoch".format(i=i))
                         break
